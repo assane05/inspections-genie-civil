@@ -5,6 +5,8 @@
  * Tous les points sont à RAS par défaut ; seule l'exception est saisie.
  */
 
+import { createVersionedDictionary } from "./dictionary-store";
+
 export type CheckPoint = { id: string; label: string };
 export type Segment = { id: string; label: string; points: CheckPoint[] };
 export type Family = { id: string; label: string; hint?: string; segments: Segment[] };
@@ -65,8 +67,8 @@ function seg(id: string, label: string, points: string[]): Segment {
   return { id, label, points: points.map((p, i) => ({ id: `${id}.${i + 1}`, label: p })) };
 }
 
-/** Familles génériques applicables à toutes les zones aéroportuaires. */
-const baseFamilies: Family[] = [
+/** Familles génériques applicables à toutes les zones aéroportuaires — valeurs par défaut. */
+const DEFAULT_FAMILIES: Family[] = [
   {
     id: "surface",
     label: "Surface & revêtement",
@@ -157,11 +159,21 @@ const baseFamilies: Family[] = [
   },
 ];
 
+const familiesStore = createVersionedDictionary<Family[]>("families", DEFAULT_FAMILIES);
+
+/** Familles/types de dégradation actuellement en vigueur (éditées par l'admin ou par défaut). */
+export function getFamilies(): Family[] {
+  return familiesStore.current();
+}
+export const getFamiliesVersion = familiesStore.version;
+export const saveFamilies = familiesStore.save;
+export const resetFamilies = familiesStore.resetToDefaults;
+export const familiesCustomized = familiesStore.isCustomized;
+
 /** Renvoie les catégories de contrôle applicables, dans l'ordre demandé par la fiche. */
 export function categoriesForGroup(categoryIds: string[]): Family[] {
-  return categoryIds
-    .map((id) => baseFamilies.find((f) => f.id === id))
-    .filter((f): f is Family => !!f);
+  const families = getFamilies();
+  return categoryIds.map((id) => families.find((f) => f.id === id)).filter((f): f is Family => !!f);
 }
 
 /**

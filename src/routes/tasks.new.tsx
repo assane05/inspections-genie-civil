@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { ficheCatalog } from "@/lib/fiche-catalog";
+import { getFicheCatalog } from "@/lib/fiche-catalog";
 import { SUPERVISOR_GROUPS } from "@/lib/auth-api";
 import { createTasks, listAllTasks, isoWeek } from "@/lib/admin-tasks";
 import { cn } from "@/lib/utils";
@@ -34,20 +34,24 @@ export const Route = createFileRoute("/tasks/new")({
 
 const BUILDING_FORM = "Fiche d'inspection Bâtiment";
 
-/** Formulaires disponibles, groupés — catalogue horizontal + fiche bâtiment. */
-const FORM_GROUPS: { group: string; forms: string[] }[] = [
-  ...Object.entries(
-    ficheCatalog.reduce<Record<string, string[]>>((acc, f) => {
-      (acc[f.group] ??= []).push(f.label);
-      return acc;
-    }, {}),
-  ).map(([group, forms]) => ({ group, forms })),
-  { group: "Bâtiment", forms: [BUILDING_FORM] },
-];
+function buildFormGroups(): { group: string; forms: string[] }[] {
+  return [
+    ...Object.entries(
+      getFicheCatalog().reduce<Record<string, string[]>>((acc, f) => {
+        (acc[f.group] ??= []).push(f.label);
+        return acc;
+      }, {}),
+    ).map(([group, forms]) => ({ group, forms })),
+    { group: "Bâtiment", forms: [BUILDING_FORM] },
+  ];
+}
 
 function NewTask() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  // Recalculé à chaque montage : reflète immédiatement les éditions du dictionnaire de
+  // fiches faites côté admin, sans redéploiement.
+  const FORM_GROUPS = useMemo(buildFormGroups, []);
 
   const [form, setForm] = useState<string>("");
   const [zones, setZones] = useState<string[]>([]);

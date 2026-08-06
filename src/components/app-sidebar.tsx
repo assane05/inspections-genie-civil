@@ -10,6 +10,8 @@ import {
   Plane,
   Settings,
   BookOpen,
+  Layers,
+  Users,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,6 +53,11 @@ export function AppSidebar() {
   const misc = [
     { title: t("nav.gallery"), url: "/gallery", icon: ImageIcon },
     { title: t("nav.evaluation"), url: "/evaluation", icon: ClipboardCheck },
+  ];
+
+  const admin = [
+    { title: t("nav.models"), url: "/models", icon: Layers },
+    { title: t("nav.users"), url: "/users", icon: Users },
   ];
 
   const isActive = (url: string) =>
@@ -121,6 +128,7 @@ export function AppSidebar() {
         <Section label={t("nav.forms")} items={forms} />
         <Section label={t("nav.tasks")} items={ops} />
         <Section label="Divers" items={misc} />
+        <Section label="Administration" items={admin} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">

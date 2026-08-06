@@ -107,11 +107,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Tableau de bord opérationnel pour les inspections runway, taxiway, apron et infrastructures associées.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo.png", type: "image/x-icon" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],

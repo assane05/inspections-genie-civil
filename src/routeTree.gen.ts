@@ -15,9 +15,11 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EvaluationRouteImport } from './routes/evaluation'
 import { Route as FormsRouteImport } from './routes/forms'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as ModelsRouteImport } from './routes/models'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as SupervisorRouteImport } from './routes/supervisor'
 import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as FormsAvailableRouteImport } from './routes/forms.available'
 import { Route as SupervisorIndexRouteImport } from './routes/supervisor.index'
 import { Route as SupervisorDashboardRouteImport } from './routes/supervisor.dashboard'
@@ -58,6 +60,11 @@ const GalleryRoute = GalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModelsRoute = ModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlanningRoute = PlanningRouteImport.update({
   id: '/planning',
   path: '/planning',
@@ -71,6 +78,11 @@ const SupervisorRoute = SupervisorRouteImport.update({
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FormsAvailableRoute = FormsAvailableRouteImport.update({
@@ -127,9 +139,11 @@ export interface FileRoutesByFullPath {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
   '/tasks': typeof TasksRouteWithChildren
+  '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
@@ -147,8 +161,10 @@ export interface FileRoutesByTo {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/tasks': typeof TasksRouteWithChildren
+  '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
@@ -167,9 +183,11 @@ export interface FileRoutesById {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
   '/tasks': typeof TasksRouteWithChildren
+  '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
@@ -189,9 +207,11 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/models'
     | '/planning'
     | '/supervisor'
     | '/tasks'
+    | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
@@ -209,8 +229,10 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/models'
     | '/planning'
     | '/tasks'
+    | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
@@ -228,9 +250,11 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/models'
     | '/planning'
     | '/supervisor'
     | '/tasks'
+    | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
@@ -249,9 +273,11 @@ export interface RootRouteChildren {
   EvaluationRoute: typeof EvaluationRoute
   FormsRoute: typeof FormsRouteWithChildren
   GalleryRoute: typeof GalleryRoute
+  ModelsRoute: typeof ModelsRoute
   PlanningRoute: typeof PlanningRoute
   SupervisorRoute: typeof SupervisorRouteWithChildren
   TasksRoute: typeof TasksRouteWithChildren
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -298,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/models': {
+      id: '/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof ModelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/planning': {
       id: '/planning'
       path: '/planning'
@@ -317,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forms/available': {
@@ -436,9 +476,11 @@ const rootRouteChildren: RootRouteChildren = {
   EvaluationRoute: EvaluationRoute,
   FormsRoute: FormsRouteWithChildren,
   GalleryRoute: GalleryRoute,
+  ModelsRoute: ModelsRoute,
   PlanningRoute: PlanningRoute,
   SupervisorRoute: SupervisorRouteWithChildren,
   TasksRoute: TasksRouteWithChildren,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

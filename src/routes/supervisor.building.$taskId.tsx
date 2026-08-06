@@ -40,7 +40,8 @@ import { compressImage } from "@/lib/image";
 import { submitTask, getTaskOverride } from "@/lib/task-status";
 import { exportFichePdf } from "@/lib/pdf-export";
 import {
-  buildingCategories,
+  getBuildingCategories,
+  getBuildingCategoriesVersion,
   buildingItemCount,
   categoryDefectCount,
   defaultBuildingPoints,
@@ -105,6 +106,10 @@ function BuildingTaskForm() {
   const { user } = useAuth();
   const task = listAllTasks().find((t) => t.id === taskId && t.kind === "batiment");
   const draftKey = `building-${taskId}`;
+  // Checklist en vigueur au montage — reflète immédiatement les éditions admin (sans
+  // redéploiement) ; figée pour la durée de la saisie afin de ne pas déplacer les items
+  // sous les pieds du superviseur en cours de remplissage.
+  const buildingCategories = useMemo(getBuildingCategories, []);
 
   const initial = useMemo<BuildingDraft>(() => {
     const stored = loadDraft<BuildingDraft>(draftKey);
@@ -290,6 +295,9 @@ function BuildingTaskForm() {
       // Horodatage client — voir la limite documentée dans task-status.ts (nécessite un
       // horodatage serveur fiable une fois le backend en place).
       submittedAt: new Date().toISOString(),
+      // Version du dictionnaire "checklist bâtiment" en vigueur à la soumission — une
+      // édition ultérieure du modèle n'altère pas rétroactivement cette fiche.
+      modelVersion: { buildingCategories: getBuildingCategoriesVersion() },
     });
     submitTask(task.id, submittedBy);
     clearDraft(draftKey);

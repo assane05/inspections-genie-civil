@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useI18n } from "@/lib/i18n";
 import loginHero from "@/assets/login-hero.jpg";
+import LogoLas from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,7 +50,10 @@ function LoginPage() {
           "Session closed after 15 minutes of inactivity. Please sign in again.",
         )
       : lastLogoutReason === "expired"
-        ? t("Votre session a expiré. Merci de vous reconnecter.", "Your session expired. Please sign in again.")
+        ? t(
+            "Votre session a expiré. Merci de vous reconnecter.",
+            "Your session expired. Please sign in again.",
+          )
         : null;
 
   async function handleSubmit(e: FormEvent) {
@@ -70,7 +74,6 @@ function LoginPage() {
     }
   }
 
-
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-2">
@@ -86,21 +89,23 @@ function LoginPage() {
 
           <div className="relative z-10 flex w-full flex-col justify-between p-12">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg glow-primary">
-                <Plane className="h-5 w-5" strokeWidth={2.5} />
+              <div className="flex h-20 w-20 items-center justify-center text-primary-foreground">
+                <img src={LogoLas} alt="" />
+                {/* <Plane className="h-5 w-5" strokeWidth={2.5} /> */}
               </div>
               <div>
                 <div className="font-display text-lg font-semibold tracking-tight text-white drop-shadow-sm">
                   LAS Inspections
                 </div>
-                <div className="text-xs text-white/80 drop-shadow-sm">
+                {/* <div className="text-xs text-white/80 drop-shadow-sm">
                   {t("Infrastructures Horizontales", "Horizontal Infrastructures")}
-                </div>
+                </div> */}
               </div>
             </div>
 
             <div className="text-xs text-white/80 drop-shadow-sm">
-              © {new Date().getFullYear()} LAS · {t("Tous droits réservés.", "All rights reserved.")}
+              © {new Date().getFullYear()} LAS ·{" "}
+              {t("Tous droits réservés.", "All rights reserved.")}
             </div>
           </div>
         </aside>
@@ -112,7 +117,9 @@ function LoginPage() {
               type="button"
               onClick={() => setLang("fr")}
               className={`rounded-full px-3 py-1 transition-colors ${
-                lang === "fr" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                lang === "fr"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               FR
@@ -121,7 +128,9 @@ function LoginPage() {
               type="button"
               onClick={() => setLang("en")}
               className={`rounded-full px-3 py-1 transition-colors ${
-                lang === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                lang === "en"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               EN
@@ -129,26 +138,14 @@ function LoginPage() {
           </div>
 
           <div className="w-full max-w-md">
-            <div className="mb-8 lg:hidden flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
-                <Plane className="h-5 w-5" strokeWidth={2.5} />
-              </div>
-              <div>
-                <div className="font-display font-semibold">LAS Inspections</div>
-                <div className="text-xs text-muted-foreground">
-                  {t("Infrastructures Horizontales", "Horizontal Infrastructures")}
-                </div>
-              </div>
-            </div>
-
             <div>
               <h1 className="font-display text-3xl font-bold tracking-tight">
                 {t("Bon retour", "Welcome back")}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {t(
-                  "Connectez-vous à votre espace inspecteur pour continuer.",
-                  "Sign in to your inspector workspace to continue.",
+                  "Connectez-vous à votre espace pour continuer.",
+                  "Sign in to your workspace to continue.",
                 )}
               </p>
             </div>
@@ -176,10 +173,7 @@ function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">{t("Mot de passe", "Password")}</Label>
-                  <Link
-                    to="/"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
+                  <Link to="/" className="text-xs font-medium text-primary hover:underline">
                     {t("Mot de passe oublié ?", "Forgot password?")}
                   </Link>
                 </div>
@@ -219,7 +213,6 @@ function LoginPage() {
                 </div>
               )}
 
-
               {error && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
@@ -237,28 +230,21 @@ function LoginPage() {
                 )}
               </Button>
 
-              <div className="relative py-2">
+              {/* <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    {t("ou", "or")}
-                  </span>
+                  <span className="bg-background px-2 text-muted-foreground">{t("ou", "or")}</span>
                 </div>
-              </div>
+              </div> */}
 
-              <Button type="button" variant="outline" size="lg" className="w-full h-11">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                {t("Connexion SSO entreprise", "Enterprise SSO sign-in")}
-              </Button>
-
-              <p className="text-center text-xs text-muted-foreground">
+              {/* <p className="text-center text-xs text-muted-foreground">
                 {t("Pas encore de compte ?", "No account yet?")}{" "}
                 <a href="#" className="font-medium text-primary hover:underline">
                   {t("Contactez votre administrateur", "Contact your administrator")}
                 </a>
-              </p>
+              </p> */}
             </form>
           </div>
         </section>

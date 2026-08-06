@@ -18,6 +18,7 @@
  * utilisé ici : chaque item est explicitement initialisé à "N/A".
  */
 
+import { createVersionedDictionary } from "./dictionary-store";
 import { emptyPoint, pointState, type ChecklistState } from "@/lib/inspection-checklist";
 
 export type BuildingItem = { id: string; label: string };
@@ -32,7 +33,7 @@ export type BuildingCategory = {
 function items(categoryId: string, labels: string[]): BuildingItem[] {
   return labels.map((label, i) => ({ id: `${categoryId}.${i + 1}`, label }));
 }
-export const buildingCategories: BuildingCategory[] = [
+export const DEFAULT_BUILDING_CATEGORIES: BuildingCategory[] = [
   {
     id: "murs",
     code: "A",
@@ -123,8 +124,22 @@ export const buildingCategories: BuildingCategory[] = [
   },
 ];
 
+const buildingCategoriesStore = createVersionedDictionary<BuildingCategory[]>(
+  "building-categories",
+  DEFAULT_BUILDING_CATEGORIES,
+);
+
+/** Checklist bâtiment actuellement en vigueur (éditée par l'admin ou par défaut). */
+export function getBuildingCategories(): BuildingCategory[] {
+  return buildingCategoriesStore.current();
+}
+export const getBuildingCategoriesVersion = buildingCategoriesStore.version;
+export const saveBuildingCategories = buildingCategoriesStore.save;
+export const resetBuildingCategories = buildingCategoriesStore.resetToDefaults;
+export const buildingCategoriesCustomized = buildingCategoriesStore.isCustomized;
+
 export function buildingItemCount(): number {
-  return buildingCategories.reduce((n, c) => n + c.items.length, 0);
+  return getBuildingCategories().reduce((n, c) => n + c.items.length, 0);
 }
 
 /** État "N/A par défaut" pour un item bâtiment (repurpose "ras" du modèle générique). */
@@ -133,7 +148,7 @@ export const naPoint = { ...emptyPoint, status: "ras" } as const;
 /** Initialise tous les items bâtiment à "N/A" — jamais de "non_inspecte" côté bâtiment. */
 export function defaultBuildingPoints(): ChecklistState {
   const out: ChecklistState = {};
-  for (const cat of buildingCategories) {
+  for (const cat of getBuildingCategories()) {
     for (const item of cat.items) out[item.id] = { ...naPoint };
   }
   return out;

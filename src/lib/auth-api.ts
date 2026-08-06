@@ -10,6 +10,8 @@
  *    `VITE_AUTH_API_URL` (ex : https://api.votre-domaine.com).
  */
 
+import { listUsers } from "./user-directory";
+
 export type Role = "admin" | "supervisor";
 
 export type SessionUser = {
@@ -21,6 +23,8 @@ export type SessionUser = {
   /** Un utilisateur appartient à un ou plusieurs groupes (Supervisor 1–5). */
   groups: string[];
   initials: string;
+  /** Un compte désactivé ne peut plus se connecter (cf. gestion des utilisateurs). */
+  isActive: boolean;
 };
 
 export type AuthResult = {
@@ -36,44 +40,17 @@ export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 export const IDLE_TIMEOUT_SECONDS = 15 * 60;
 
 /**
- * Annuaire de démonstration : uniquement des profils (rôle + groupes),
- * jamais de mots de passe. Il est ignoré dès que `VITE_AUTH_API_URL` est défini.
+ * Annuaire des utilisateurs : voir user-directory.ts (CRUD admin, versionné,
+ * éditable sans redéploiement). Réexporté ici pour compatibilité des imports
+ * existants.
  */
-/** Groupes de supervision — source unique, réutilisée pour l'assignation de tâches et la gestion des utilisateurs. */
-export const SUPERVISOR_GROUPS = [
-  "Supervisor 1",
-  "Supervisor 2",
-  "Supervisor 3",
-  "Supervisor 4",
-  "Supervisor 5",
-];
-
-const demoDirectory: SessionUser[] = [
-  {
-    id: "u-admin-1",
-    name: "Approver 1",
-    username: "approver1",
-    email: "approver1@las.aero",
-    role: "admin",
-    groups: [...SUPERVISOR_GROUPS],
-    initials: "A1",
-  },
-  ...SUPERVISOR_GROUPS.map((group, i) => ({
-    id: `u-supervisor-${i + 1}`,
-    name: `Supervisor ${i + 1}`,
-    username: `supervisor${i + 1}`,
-    email: `supervisor${i + 1}@las.aero`,
-    role: "supervisor" as Role,
-    groups: [group],
-    initials: `S${i + 1}`,
-  })),
-];
+export { SUPERVISOR_GROUPS } from "./user-directory";
 
 export class AuthError extends Error {}
 
 function findDemoUser(identifier: string): SessionUser | undefined {
   const key = identifier.trim().toLowerCase();
-  return demoDirectory.find((u) => u.username === key || u.email.toLowerCase() === key);
+  return listUsers().find((u) => u.username === key || u.email.toLowerCase() === key);
 }
 
 export async function authenticate(identifier: string, password: string): Promise<AuthResult> {
@@ -94,7 +71,9 @@ export async function authenticate(identifier: string, password: string): Promis
   // --- Mode démonstration (aucun backend branché) ---
   await new Promise((r) => setTimeout(r, 500));
   const user = findDemoUser(identifier);
-  if (!user || password.trim().length < 8) throw new AuthError("invalid_credentials");
+  if (!user || !user.isActive || password.trim().length < 8) {
+    throw new AuthError("invalid_credentials");
+  }
   return { user, expiresIn: SESSION_TTL_SECONDS };
 }
 

@@ -17,6 +17,8 @@
  * charges — à compléter dès que la liste réelle sera communiquée.
  */
 
+import { createVersionedDictionary } from "./dictionary-store";
+
 export type SegmentationKind = "linear" | "single";
 
 export type FicheType = {
@@ -49,7 +51,7 @@ const CLOTURE_SET = ["surete", "abords", "drainage"];
 const OUVRAGE_SET = ["drainage", "abords", "surface"];
 const BANDE_SET = ["surface", "abords", "drainage"];
 
-export const ficheCatalog: FicheType[] = [
+export const DEFAULT_FICHE_CATALOG: FicheType[] = [
   // --- Runway ---
   {
     id: "runway",
@@ -209,6 +211,20 @@ export const ficheCatalog: FicheType[] = [
   },
 ];
 
+const ficheCatalogStore = createVersionedDictionary<FicheType[]>(
+  "fiche-catalog",
+  DEFAULT_FICHE_CATALOG,
+);
+
+/** Catalogue de fiches actuellement en vigueur (édité par l'admin ou par défaut). */
+export function getFicheCatalog(): FicheType[] {
+  return ficheCatalogStore.current();
+}
+export const getFicheCatalogVersion = ficheCatalogStore.version;
+export const saveFicheCatalog = ficheCatalogStore.save;
+export const resetFicheCatalog = ficheCatalogStore.resetToDefaults;
+export const ficheCatalogCustomized = ficheCatalogStore.isCustomized;
+
 function normalize(label: string): string {
   return label
     .trim()
@@ -217,11 +233,10 @@ function normalize(label: string): string {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-const byNormalizedLabel = new Map(ficheCatalog.map((f) => [normalize(f.label), f]));
-
 /** Retrouve la fiche du catalogue à partir du libellé porté par la tâche (insensible à la casse/accents). */
 export function resolveFicheType(formLabel: string): FicheType | undefined {
-  return byNormalizedLabel.get(normalize(formLabel));
+  const target = normalize(formLabel);
+  return getFicheCatalog().find((f) => normalize(f.label) === target);
 }
 
 export type PhysicalSegment = { id: string; label: string };

@@ -41,7 +41,12 @@ import { submitTask, getTaskOverride } from "@/lib/task-status";
 import { exportFichePdf } from "@/lib/pdf-export";
 import { clearDraft, enqueueSubmission, loadDraft, saveDraft } from "@/lib/offline-queue";
 import { daysUntil, dueState, statusLabel } from "@/lib/tasks";
-import { resolveFicheType, segmentsForTask, type PhysicalSegment } from "@/lib/fiche-catalog";
+import {
+  resolveFicheType,
+  segmentsForTask,
+  getFicheCatalogVersion,
+  type PhysicalSegment,
+} from "@/lib/fiche-catalog";
 import {
   categoriesForGroup,
   emptyPoint,
@@ -49,6 +54,7 @@ import {
   familyFullyInspected,
   familyNonInspecteCount,
   familyPointIds,
+  getFamiliesVersion,
   namespaceFamilies,
   pointState,
   SEVERITIES,
@@ -329,6 +335,10 @@ function TaskForm() {
       // Horodatage client — voir la limite documentée dans task-status.ts (nécessite un
       // horodatage serveur fiable une fois le backend en place).
       submittedAt: new Date().toISOString(),
+      // Version des dictionnaires (familles + catalogue de fiches) en vigueur à la
+      // soumission — une édition ultérieure du modèle n'altère pas rétroactivement
+      // cette fiche déjà soumise.
+      modelVersion: { families: getFamiliesVersion(), ficheCatalog: getFicheCatalogVersion() },
     });
     submitTask(task.id, submittedBy);
     clearDraft(draftKey);
