@@ -4,7 +4,7 @@ export const currentUser = {
   email: "approver1@las.aero",
   role: "Approver",
   initials: "A1",
-  avatar: null as string | null,
+  avatar: null,
 };
 
 export const supervisorUser = {
@@ -13,7 +13,7 @@ export const supervisorUser = {
   email: "supervisor1@las.aero",
   role: "Supervisor",
   initials: "S1",
-  avatar: null as string | null,
+  avatar: null,
 };
 
 export const kpis = {
@@ -196,15 +196,20 @@ export const formRows: FormRow[] = [
 export type TaskRow = {
   id: string;
   form: string;
+  /** Date limite ISO (yyyy-mm-dd) — source de vérité pour tri/filtre/retard. */
   dueISO: string;
+  /** Libellé lisible de la date limite. */
   dueDate: string;
   zone: string;
   notes: string;
   group: string;
   year: number;
+  /** Bimestre 1..6 */
   bimester: number;
+  /** Semaine ISO */
   week: number;
   status: "not_submitted" | "in_progress" | "pending" | "verified";
+  /** "horizontal" (fiche de piste/route/etc., par défaut) ou "batiment" (en-tête + checklist A→H). */
   kind: "horizontal" | "batiment";
 };
 
@@ -252,262 +257,3 @@ export function makeTask(
     kind,
   };
 }
-
-const rawTasks: Array<[string, string, string, string, string, string, TaskRow["status"]]> = [
-  [
-    "1",
-    "Fiche d'inspection fence",
-    "2026-08-14",
-    "Fence Nord",
-    "EFS; VERS; MT",
-    "Supervisor 2",
-    "not_submitted",
-  ],
-  [
-    "2",
-    "Fiche d'inspection Chemin de Ronde Interieur",
-    "2026-08-14",
-    "CR Int. Sud",
-    "EFS; VERS; MT",
-    "Supervisor 2",
-    "not_submitted",
-  ],
-  [
-    "3",
-    "Fiche d'inspection balisage diurne CR Interieur",
-    "2026-08-07",
-    "CR Int. Est",
-    "EFS; VERS; MT",
-    "Supervisor 2",
-    "in_progress",
-  ],
-  [
-    "4",
-    "Fiche d'inspection balisage diurne CR Interieur",
-    "2026-07-31",
-    "CR Int. Ouest",
-    "MT; VERS; EFS",
-    "Supervisor 1",
-    "not_submitted",
-  ],
-  [
-    "5",
-    "Fiche d'inspection fence",
-    "2026-07-30",
-    "Fence Sud",
-    "MT; VERS; EFS",
-    "Supervisor 1",
-    "in_progress",
-  ],
-  [
-    "6",
-    "Fiche d'inspection Chemin de Ronde Interieur",
-    "2026-07-29",
-    "CR Int. Nord",
-    "MT; VERS; EFS",
-    "Supervisor 1",
-    "not_submitted",
-  ],
-  [
-    "7",
-    "Fiche d'inspection Parking",
-    "2026-07-24",
-    "Parking P2",
-    "PARKING STATIONNEMENT",
-    "Supervisor 1",
-    "not_submitted",
-  ],
-  [
-    "8",
-    "Fiche d'inspection Service Road",
-    "2026-07-20",
-    "SR 5 à 8",
-    "SR 5 a 8",
-    "Supervisor 1",
-    "in_progress",
-  ],
-  [
-    "9",
-    "Fiche d'inspection Runway",
-    "2026-07-15",
-    "Runway 05/23",
-    "Contrôle mensuel",
-    "Supervisor 1",
-    "not_submitted",
-  ],
-  [
-    "10",
-    "Fiche d'inspection Taxiway",
-    "2026-07-10",
-    "Taxiway A",
-    "Fissures + marquage",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "11",
-    "Fiche d'inspection Apron",
-    "2026-06-26",
-    "Apron 1",
-    "GSE Road inclus",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "12",
-    "Fiche d'inspection GSE Road",
-    "2026-06-12",
-    "GSE Nord",
-    "Signalisation",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "13",
-    "Fiche d'inspection Drainage",
-    "2026-05-29",
-    "Ouvrage D3",
-    "Curage à vérifier",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "14",
-    "Fiche d'inspection Access Road",
-    "2026-05-15",
-    "Access Road 2",
-    "Nids de poule",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "15",
-    "Fiche inspection bande de pistes-RESA",
-    "2026-04-24",
-    "RESA 23",
-    "Balisage",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "16",
-    "Fiche d'inspection balisage diurne Runway",
-    "2026-04-10",
-    "Runway 05",
-    "Peinture",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "17",
-    "Fiche d'inspection Taxiway",
-    "2026-03-27",
-    "Taxiway B",
-    "Contrôle bimestriel",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "18",
-    "Fiche d'inspection fence",
-    "2026-03-13",
-    "Fence Est",
-    "Clôture endommagée",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "19",
-    "Fiche d'inspection Service Road",
-    "2026-02-27",
-    "SR 1 à 4",
-    "Éclairage",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "20",
-    "Fiche d'inspection Parking",
-    "2026-02-13",
-    "Parking P1",
-    "Marquage au sol",
-    "Supervisor 1",
-    "verified",
-  ],
-  ["21", "Fiche d'inspection Runway", "2026-01-30", "Runway 23", "FOD", "Supervisor 1", "verified"],
-  ["22", "Fiche d'inspection Apron", "2026-01-16", "Apron 2", "Joints", "Supervisor 1", "verified"],
-  [
-    "23",
-    "Fiche d'inspection Drainage",
-    "2025-12-19",
-    "Ouvrage D1",
-    "Saison des pluies",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "24",
-    "Fiche d'inspection Taxiway",
-    "2025-12-05",
-    "Taxiway C",
-    "Balisage diurne",
-    "Supervisor 1",
-    "verified",
-  ],
-  [
-    "25",
-    "Fiche d'inspection Service Road",
-    "2026-08-21",
-    "SR 9 à 12",
-    "Nouvelle assignation",
-    "Supervisor 3",
-    "not_submitted",
-  ],
-  [
-    "26",
-    "Fiche d'inspection Apron",
-    "2026-08-28",
-    "Apron 3",
-    "Contrôle GSE",
-    "Supervisor 4",
-    "not_submitted",
-  ],
-];
-
-export const taskRows: TaskRow[] = rawTasks.map((t) => makeTask(...t));
-
-/** Tâches d'inspection bâtiment — jeu de données fictif en attendant les vraies tâches. */
-const rawBuildingTasks: Array<[string, string, string, string, string, string, TaskRow["status"]]> =
-  [
-    [
-      "b1",
-      "Fiche d'inspection Bâtiment",
-      "2026-08-10",
-      "Terminal 1",
-      "Inspection trimestrielle",
-      "Supervisor 1",
-      "not_submitted",
-    ],
-    [
-      "b2",
-      "Fiche d'inspection Bâtiment",
-      "2026-07-28",
-      "Bloc technique",
-      "Suite signalement électrique",
-      "Supervisor 1",
-      "in_progress",
-    ],
-    [
-      "b3",
-      "Fiche d'inspection Bâtiment",
-      "2026-06-15",
-      "Aérogare Fret",
-      "Contrôle annuel",
-      "Supervisor 2",
-      "verified",
-    ],
-  ];
-
-export const buildingTaskRows: TaskRow[] = rawBuildingTasks.map((t) => makeTask(...t, "batiment"));
-
-taskRows.push(...buildingTaskRows);

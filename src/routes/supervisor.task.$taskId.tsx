@@ -34,17 +34,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoLightbox } from "@/components/photo-lightbox";
 import { toast } from "sonner";
-import { listAllTasks } from "@/lib/admin-tasks";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTask, taskKeys } from "@/lib/queries/tasks";
+import { useDictionary } from "@/lib/queries/dictionary";
+import { useSubmissionsForTask, submissionKeys } from "@/lib/queries/submissions";
 import { useAuth } from "@/lib/auth";
 import { compressImage } from "@/lib/image";
-import { submitTask, getTaskOverride } from "@/lib/task-status";
+import { apiUrl } from "@/lib/api-client";
 import { exportFichePdf } from "@/lib/pdf-export";
 import { clearDraft, enqueueSubmission, loadDraft, saveDraft } from "@/lib/offline-queue";
 import { daysUntil, dueState, statusLabel } from "@/lib/tasks";
 import {
   resolveFicheType,
   segmentsForTask,
-  getFicheCatalogVersion,
+  type FicheType,
   type PhysicalSegment,
 } from "@/lib/fiche-catalog";
 import {
@@ -54,7 +57,6 @@ import {
   familyFullyInspected,
   familyNonInspecteCount,
   familyPointIds,
-  getFamiliesVersion,
   namespaceFamilies,
   pointState,
   SEVERITIES,
@@ -113,8 +115,16 @@ function TaskForm() {
   const { taskId } = useParams({ from: "/supervisor/task/$taskId" });
   const navigate = useNavigate();
   const { user } = useAuth();
-  const task = listAllTasks().find((t) => t.id === taskId);
+  const { data: task, isLoading: taskLoading } = useTask(taskId);
+  const { data: submissions } = useSubmissionsForTask(taskId);
+  const queryClient = useQueryClient();
   const draftKey = `task-${taskId}`;
+
+  // Dictionnaire (familles + catalogue de fiches) — vient de l'API, plus de localStorage.
+  const { data: familiesRes, isLoading: familiesLoading } = useDictionary<Family[]>("families");
+  const { data: catalogRes, isLoading: catalogLoading } =
+    useDictionary<FicheType[]>("fiche-catalog");
+  const dictionaryLoading = familiesLoading || catalogLoading;
 
   const initial = useMemo<DraftShape>(() => {
     const stored = loadDraft<DraftShape>(draftKey);
@@ -136,14 +146,20 @@ function TaskForm() {
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
 
   // Fiche du catalogue → catégories applicables → segments physiques dynamiques de la tâche.
-  const fiche = useMemo(() => (task ? resolveFicheType(task.form) : undefined), [task]);
+  const fiche = useMemo(
+    () => (task && catalogRes ? resolveFicheType(task.form, catalogRes.data) : undefined),
+    [task, catalogRes],
+  );
   const physicalSegments = useMemo<PhysicalSegment[]>(
     () => (task ? segmentsForTask(fiche, task) : []),
     [task, fiche],
   );
   const categories = useMemo(
-    () => categoriesForGroup(fiche?.categories ?? DEFAULT_CATEGORIES),
-    [fiche],
+    () =>
+      familiesRes
+        ? categoriesForGroup(fiche?.categories ?? DEFAULT_CATEGORIES, familiesRes.data)
+        : [],
+    [fiche, familiesRes],
   );
   const segmentCategories = useMemo(
     () => new Map(physicalSegments.map((seg) => [seg.id, namespaceFamilies(categories, seg.id)])),
@@ -162,13 +178,17 @@ function TaskForm() {
     return () => window.clearTimeout(id);
   }, [points, acked, comment, draftKey]);
 
-  if (!task) {
+  if (!task || dictionaryLoading) {
     return (
       <div className="p-8">
-        <p className="text-sm text-muted-foreground">Tâche introuvable.</p>
-        <Button asChild variant="outline" size="sm" className="mt-4">
-          <Link to="/supervisor/tasks">Retour aux tâches</Link>
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          {taskLoading || dictionaryLoading ? "Chargement de la fiche…" : "Tâche introuvable."}
+        </p>
+        {!taskLoading && !dictionaryLoading && (
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to="/supervisor/tasks">Retour aux tâches</Link>
+          </Button>
+        )}
       </div>
     );
   }
@@ -317,32 +337,28 @@ function TaskForm() {
         ),
       );
     });
-    const submittedBy = user?.name ?? "Superviseur";
-    enqueueSubmission("/api/public/inspections", {
+    enqueueSubmission(apiUrl("/submissions"), {
       taskId: task.id,
       form: task.form,
       ficheId: fiche?.id ?? null,
       ficheCode: fiche?.code ?? null,
       zone: task.zone,
       notes: task.notes,
-      week: task.week,
-      dueDate: task.dueISO,
       group: task.group,
       attestedSegments: acked,
       defects,
       comment,
-      submittedBy,
-      // Horodatage client — voir la limite documentée dans task-status.ts (nécessite un
-      // horodatage serveur fiable une fois le backend en place).
-      submittedAt: new Date().toISOString(),
       // Version des dictionnaires (familles + catalogue de fiches) en vigueur à la
       // soumission — une édition ultérieure du modèle n'altère pas rétroactivement
       // cette fiche déjà soumise.
-      modelVersion: { families: getFamiliesVersion(), ficheCatalog: getFicheCatalogVersion() },
+      modelVersion: { families: familiesRes?.version ?? 0, ficheCatalog: catalogRes?.version ?? 0 },
     });
-    submitTask(task.id, submittedBy);
     clearDraft(draftKey);
     setConfirmOpen(false);
+    // Rafraîchit la tâche/l'historique — au pire optimiste si hors-ligne : la vraie
+    // valeur reviendra dès que la file d'attente aura rejoué la soumission.
+    queryClient.invalidateQueries({ queryKey: taskKeys.all });
+    queryClient.invalidateQueries({ queryKey: submissionKeys.byTask(task.id) });
     toast.success("Fiche soumise — En attente de vérification", {
       description: navigator.onLine
         ? `${defects.length} défaut(s) transmis.`
@@ -353,7 +369,7 @@ function TaskForm() {
 
   /** Export PDF fidèle au contenu saisi (sprint 14) — disponible en brouillon ou après soumission. */
   const downloadPdf = () => {
-    const override = getTaskOverride(task.id);
+    const lastSubmission = submissions?.[0];
     const constats = physicalSegments.flatMap((seg) => {
       const cats = segmentCategories.get(seg.id)!;
       return cats.flatMap((f) =>
@@ -379,7 +395,7 @@ function TaskForm() {
     exportFichePdf({
       title: task.form,
       subtitle: `${task.zone} — ${task.group}`,
-      status: override ? "En attente de vérification" : statusLabelBefore,
+      status: lastSubmission ? "En attente de vérification" : statusLabelBefore,
       meta: [
         { label: "Zone / Notes", value: `${task.zone} · ${task.notes}` },
         { label: "Semaine", value: `S${task.week} · Bimestre ${task.bimester}` },
@@ -388,8 +404,8 @@ function TaskForm() {
       ],
       constats,
       comment,
-      submittedBy: override?.submittedBy ?? null,
-      submittedAt: override?.submittedAt ?? null,
+      submittedBy: lastSubmission?.submittedBy.name ?? null,
+      submittedAt: lastSubmission?.submittedAt ?? null,
     });
   };
 

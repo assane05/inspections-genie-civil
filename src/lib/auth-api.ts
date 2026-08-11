@@ -10,8 +10,6 @@
  *    `VITE_AUTH_API_URL` (ex : https://api.votre-domaine.com).
  */
 
-import { listUsers } from "./user-directory";
-
 export type Role = "admin" | "supervisor";
 
 export type SessionUser = {
@@ -39,18 +37,48 @@ const API_URL = import.meta.env.VITE_AUTH_API_URL as string | undefined;
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 export const IDLE_TIMEOUT_SECONDS = 15 * 60;
 
+/** Groupes de supervision — source unique (assignation de tâches, gestion des utilisateurs). */
+export const SUPERVISOR_GROUPS = [
+  "Supervisor 1",
+  "Supervisor 2",
+  "Supervisor 3",
+  "Supervisor 4",
+  "Supervisor 5",
+];
+
 /**
- * Annuaire des utilisateurs : voir user-directory.ts (CRUD admin, versionné,
- * éditable sans redéploiement). Réexporté ici pour compatibilité des imports
- * existants.
+ * Annuaire de démonstration — utilisé uniquement quand VITE_AUTH_API_URL n'est pas
+ * défini (aucun backend branché). Sans rapport avec le CRUD utilisateurs réel
+ * (src/lib/queries/users.ts), qui passe toujours par l'API.
  */
-export { SUPERVISOR_GROUPS } from "./user-directory";
+const DEMO_DIRECTORY: SessionUser[] = [
+  {
+    id: "u-admin-1",
+    name: "Approver 1",
+    username: "approver1",
+    email: "approver1@las.aero",
+    role: "admin",
+    groups: [...SUPERVISOR_GROUPS],
+    initials: "A1",
+    isActive: true,
+  },
+  ...SUPERVISOR_GROUPS.map((group, i) => ({
+    id: `u-supervisor-${i + 1}`,
+    name: `Supervisor ${i + 1}`,
+    username: `supervisor${i + 1}`,
+    email: `supervisor${i + 1}@las.aero`,
+    role: "supervisor" as Role,
+    groups: [group],
+    initials: `S${i + 1}`,
+    isActive: true,
+  })),
+];
 
 export class AuthError extends Error {}
 
 function findDemoUser(identifier: string): SessionUser | undefined {
   const key = identifier.trim().toLowerCase();
-  return listUsers().find((u) => u.username === key || u.email.toLowerCase() === key);
+  return DEMO_DIRECTORY.find((u) => u.username === key || u.email.toLowerCase() === key);
 }
 
 export async function authenticate(identifier: string, password: string): Promise<AuthResult> {

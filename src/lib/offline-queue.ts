@@ -49,10 +49,7 @@ export function subscribeQueue(listener: Listener) {
 
 export function saveDraft(formId: string, data: unknown) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    DRAFT_PREFIX + formId,
-    JSON.stringify({ data, savedAt: Date.now() }),
-  );
+  window.localStorage.setItem(DRAFT_PREFIX + formId, JSON.stringify({ data, savedAt: Date.now() }));
 }
 
 export function loadDraft<T = unknown>(formId: string): { data: T; savedAt: number } | null {
@@ -70,9 +67,26 @@ export function clearDraft(formId: string) {
 
 /** --- File d'attente de soumissions --- */
 
+// export function enqueueSubmission(endpoint: string, payload: unknown): QueuedSubmission {
+//   const item: QueuedSubmission = {
+//     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+//     endpoint,
+//     payload,
+//     createdAt: Date.now(),
+//     attempts: 0,
+//   };
+//   writeQueue([...readQueue(), item]);
+//   void flushQueue();
+//   return item;
+// }
+
+// APRÈS
 export function enqueueSubmission(endpoint: string, payload: unknown): QueuedSubmission {
   const item: QueuedSubmission = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    // uuid stable dès la mise en file — sert aussi de clé d'idempotence côté serveur
+    // (voir flushQueue ci-dessous), pour ne jamais créer de soumission en double
+    // si la réponse se perd après un envoi déjà réussi.
+    id: crypto.randomUUID(),
     endpoint,
     payload,
     createdAt: Date.now(),
@@ -98,7 +112,7 @@ export async function flushQueue(): Promise<{ sent: number; remaining: number }>
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(item.payload),
+          body: JSON.stringify({ ...(item.payload as object), idempotencyKey: item.id }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         queue = queue.filter((q) => q.id !== item.id);

@@ -1,6 +1,4 @@
 import { type TaskRow } from "@/lib/mock-data";
-import { getTaskOverride } from "@/lib/task-status";
-import { listAllTasks } from "@/lib/admin-tasks";
 
 export type TaskFilters = {
   q: string;
@@ -38,18 +36,6 @@ export function dueState(task: TaskRow, now = new Date()): DueState {
   if (d < 0) return "overdue";
   if (d <= 3) return "due_soon";
   return "ok";
-}
-
-/** Tâches visibles pour un utilisateur : uniquement celles de ses groupes, statut à jour
- * (fusionné avec l'override de soumission — sprint 11) pour que toutes les vues (liste,
- * formulaires, tableau de bord) restent cohérentes entre elles. */
-export function tasksForGroups(groups: string[]): TaskRow[] {
-  return listAllTasks()
-    .filter((t) => groups.includes(t.group))
-    .map((t) => {
-      const override = getTaskOverride(t.id);
-      return override ? { ...t, status: override.status } : t;
-    });
 }
 
 /** Progression globale "soumises / total" (sprint 15). Soumise = pending ou verified. */

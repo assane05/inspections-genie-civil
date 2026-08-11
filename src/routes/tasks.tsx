@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, Trash2, Play, Plus } from "lucide-react";
+import { Loader2, Search, Trash2, Play, Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { listAllTasks, deleteTask } from "@/lib/admin-tasks";
+import { useDeleteTask, useTasks } from "@/lib/queries/tasks";
 import { applyFilters, emptyFilters, type TaskFilters } from "@/lib/tasks";
 import { StatusBadge } from "@/routes/dashboard";
 
@@ -38,27 +38,22 @@ export const Route = createFileRoute("/tasks")({
 function TasksPage() {
   const { t } = useI18n();
   const [filters, setFilters] = useState<TaskFilters>(emptyFilters);
-  const [refreshKey, setRefreshKey] = useState(0);
   const set = (key: keyof TaskFilters, value: string) =>
     setFilters((f) => ({ ...f, [key]: value }));
 
   // Même TaskFilters/applyFilters que la liste superviseur et le tableau de bord —
   // garantit des filtres cohérents partout (cf. AC "Assignation des tâches").
-  const all = useMemo(() => listAllTasks(), [refreshKey]);
+  const { data: all = [], isLoading, isError } = useTasks();
   const forms = useMemo(() => [...new Set(all.map((t) => t.form))].sort(), [all]);
   const groups = useMemo(() => [...new Set(all.map((t) => t.group))].sort(), [all]);
   const filtered = useMemo(() => applyFilters(all, filters), [all, filters]);
 
+  const deleteTask = useDeleteTask();
   const handleDelete = (id: string) => {
-    if (!id.startsWith("admin-")) {
-      toast.error("Suppression impossible", {
-        description: "Cette tâche fait partie du jeu de données de démonstration.",
-      });
-      return;
-    }
-    deleteTask(id);
-    setRefreshKey((k) => k + 1);
-    toast.success("Tâche supprimée");
+    deleteTask.mutate(id, {
+      onSuccess: () => toast.success("Tâche supprimée"),
+      onError: () => toast.error("Suppression impossible", { description: "Réessayez." }),
+    });
   };
 
   return (
@@ -148,7 +143,24 @@ function TasksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
+              {isLoading && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Chargement des tâches…
+                  </TableCell>
+                </TableRow>
+              )}
+              {isError && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-destructive">
+                    Impossible de charger les tâches. Vérifiez votre connexion.
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && !isError && filtered.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -187,6 +199,7 @@ function TasksPage() {
                         size="sm"
                         variant="ghost"
                         className="h-8 gap-1 text-destructive hover:bg-destructive/10"
+                        disabled={deleteTask.isPending}
                         onClick={() => handleDelete(r.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> {t("action.delete")}

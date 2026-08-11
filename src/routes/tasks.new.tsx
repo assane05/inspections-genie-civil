@@ -17,9 +17,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { getFicheCatalog } from "@/lib/fiche-catalog";
+import { useDictionary } from "@/lib/queries/dictionary";
+import type { FicheType } from "@/lib/fiche-catalog";
 import { SUPERVISOR_GROUPS } from "@/lib/auth-api";
-import { createTasks, listAllTasks, isoWeek } from "@/lib/admin-tasks";
+import { isoWeek } from "@/lib/mock-data";
+import { useCreateTasks, useTasks } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks/new")({
@@ -34,10 +36,10 @@ export const Route = createFileRoute("/tasks/new")({
 
 const BUILDING_FORM = "Fiche d'inspection Bâtiment";
 
-function buildFormGroups(): { group: string; forms: string[] }[] {
+function buildFormGroups(catalog: FicheType[]): { group: string; forms: string[] }[] {
   return [
     ...Object.entries(
-      getFicheCatalog().reduce<Record<string, string[]>>((acc, f) => {
+      catalog.reduce<Record<string, string[]>>((acc, f) => {
         (acc[f.group] ??= []).push(f.label);
         return acc;
       }, {}),
@@ -49,9 +51,10 @@ function buildFormGroups(): { group: string; forms: string[] }[] {
 function NewTask() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  // Recalculé à chaque montage : reflète immédiatement les éditions du dictionnaire de
-  // fiches faites côté admin, sans redéploiement.
-  const FORM_GROUPS = useMemo(buildFormGroups, []);
+  // Catalogue de fiches (API) — reflète immédiatement les éditions admin, sans redéploiement.
+  const { data: catalogRes, isLoading: catalogLoading } =
+    useDictionary<FicheType[]>("fiche-catalog");
+  const FORM_GROUPS = useMemo(() => buildFormGroups(catalogRes?.data ?? []), [catalogRes]);
 
   const [form, setForm] = useState<string>("");
   const [zones, setZones] = useState<string[]>([]);
@@ -61,19 +64,16 @@ function NewTask() {
   const [notes, setNotes] = useState("");
   const [comment, setComment] = useState("");
 
+  const { data: allTasks = [] } = useTasks();
+  const createTasks = useCreateTasks();
+
   // Suggestions de zones déjà utilisées pour ce formulaire (mock + tâches créées par l'admin) —
   // évite de ressaisir "Runway 05/23" à la main à chaque fois, tout en restant libre (sprint
   // "Assignation des tâches").
   const zoneSuggestions = useMemo(() => {
     if (!form) return [];
-    return [
-      ...new Set(
-        listAllTasks()
-          .filter((t) => t.form === form)
-          .map((t) => t.zone),
-      ),
-    ].sort();
-  }, [form]);
+    return [...new Set(allTasks.filter((t) => t.form === form).map((t) => t.zone))].sort();
+  }, [form, allTasks]);
 
   const toggleZone = (z: string) =>
     setZones((zs) => (zs.includes(z) ? zs.filter((x) => x !== z) : [...zs, z]));
@@ -119,18 +119,27 @@ function NewTask() {
       toast.error("Date limite manquante", { description: "Renseignez une date limite." });
       return;
     }
-    const created = createTasks({
-      form,
-      zones,
-      groups,
-      notes,
-      dueISO,
-      kind: form === BUILDING_FORM ? "batiment" : "horizontal",
-    });
-    toast.success(`${created.length} tâche(s) créée(s)`, {
-      description: `${zones.length} zone(s) × ${groups.length} groupe(s) — échéance ${new Date(dueISO + "T00:00:00").toLocaleDateString("fr-FR")}.`,
-    });
-    navigate({ to: "/tasks" });
+    createTasks.mutate(
+      {
+        form,
+        zones,
+        groups,
+        notes,
+        dueISO,
+        kind: form === BUILDING_FORM ? "batiment" : "horizontal",
+      },
+      {
+        onSuccess: (created) => {
+          toast.success(`${created.length} tâche(s) créée(s)`, {
+            description: `${zones.length} zone(s) × ${groups.length} groupe(s) — échéance ${new Date(dueISO + "T00:00:00").toLocaleDateString("fr-FR")}.`,
+          });
+          navigate({ to: "/tasks" });
+        },
+        onError: () => {
+          toast.error("Échec de la création", { description: "Réessayez dans un instant." });
+        },
+      },
+    );
   };
 
   return (
@@ -315,8 +324,10 @@ function NewTask() {
               size="sm"
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_20px_-4px_var(--color-primary)]"
               onClick={submit}
+              disabled={createTasks.isPending || catalogLoading}
             >
-              <Check className="h-4 w-4" /> Créer et assigner
+              <Check className="h-4 w-4" />
+              {createTasks.isPending ? "Création…" : "Créer et assigner"}
             </Button>
           </div>
         </div>

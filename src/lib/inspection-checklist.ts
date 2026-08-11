@@ -5,8 +5,6 @@
  * Tous les points sont à RAS par défaut ; seule l'exception est saisie.
  */
 
-import { createVersionedDictionary } from "./dictionary-store";
-
 export type CheckPoint = { id: string; label: string };
 export type Segment = { id: string; label: string; points: CheckPoint[] };
 export type Family = { id: string; label: string; hint?: string; segments: Segment[] };
@@ -68,7 +66,7 @@ function seg(id: string, label: string, points: string[]): Segment {
 }
 
 /** Familles génériques applicables à toutes les zones aéroportuaires — valeurs par défaut. */
-const DEFAULT_FAMILIES: Family[] = [
+export const DEFAULT_FAMILIES: Family[] = [
   {
     id: "surface",
     label: "Surface & revêtement",
@@ -159,20 +157,10 @@ const DEFAULT_FAMILIES: Family[] = [
   },
 ];
 
-const familiesStore = createVersionedDictionary<Family[]>("families", DEFAULT_FAMILIES);
-
-/** Familles/types de dégradation actuellement en vigueur (éditées par l'admin ou par défaut). */
-export function getFamilies(): Family[] {
-  return familiesStore.current();
-}
-export const getFamiliesVersion = familiesStore.version;
-export const saveFamilies = familiesStore.save;
-export const resetFamilies = familiesStore.resetToDefaults;
-export const familiesCustomized = familiesStore.isCustomized;
-
-/** Renvoie les catégories de contrôle applicables, dans l'ordre demandé par la fiche. */
-export function categoriesForGroup(categoryIds: string[]): Family[] {
-  const families = getFamilies();
+/** Renvoie les catégories de contrôle applicables, dans l'ordre demandé par la fiche.
+ * `families` vient de l'API (voir src/lib/queries/dictionary.ts) — plus de lecture
+ * localStorage ici. */
+export function categoriesForGroup(categoryIds: string[], families: Family[]): Family[] {
   return categoryIds.map((id) => families.find((f) => f.id === id)).filter((f): f is Family => !!f);
 }
 

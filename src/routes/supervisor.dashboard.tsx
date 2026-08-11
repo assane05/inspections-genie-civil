@@ -11,14 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/lib/auth";
+import { useTasks } from "@/lib/queries/tasks";
 import {
   applyFilters,
   emptyFilters,
   dueState,
   progressByForm,
   submissionProgress,
-  tasksForGroups,
   type TaskFilters,
 } from "@/lib/tasks";
 
@@ -37,8 +36,6 @@ export const Route = createFileRoute("/supervisor/dashboard")({
 });
 
 function SupervisorDashboard() {
-  const { user } = useAuth();
-  const groups = user?.groups ?? [];
   // Filtres année/bimestre/formulaire uniquement — le reste (statut, semaine, recherche)
   // reste "all"/vide pour que la synthèse porte sur toutes les tâches de ces critères.
   const [filters, setFilters] = useState<TaskFilters>(emptyFilters);
@@ -47,7 +44,7 @@ function SupervisorDashboard() {
 
   // Même source et même fonction de filtrage que la liste des tâches (sprint 11) et le
   // compteur "X of Y" par formulaire (sprint 13) — garantit des chiffres cohérents partout.
-  const scoped = useMemo(() => tasksForGroups(groups), [groups.join("|")]);
+  const { data: scoped = [] } = useTasks();
   const filtered = useMemo(() => applyFilters(scoped, filters), [scoped, filters]);
 
   const forms = useMemo(() => [...new Set(scoped.map((r) => r.form))].sort(), [scoped]);

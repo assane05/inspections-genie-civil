@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -34,14 +34,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoLightbox } from "@/components/photo-lightbox";
 import { toast } from "sonner";
-import { listAllTasks } from "@/lib/admin-tasks";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTask, taskKeys } from "@/lib/queries/tasks";
+import { useDictionary } from "@/lib/queries/dictionary";
+import { useSubmissionsForTask, submissionKeys } from "@/lib/queries/submissions";
 import { useAuth } from "@/lib/auth";
 import { compressImage } from "@/lib/image";
-import { submitTask, getTaskOverride } from "@/lib/task-status";
+import { apiUrl } from "@/lib/api-client";
 import { exportFichePdf } from "@/lib/pdf-export";
 import {
-  getBuildingCategories,
-  getBuildingCategoriesVersion,
   buildingItemCount,
   categoryDefectCount,
   defaultBuildingPoints,
@@ -83,13 +84,6 @@ type BuildingDraft = {
   points: ChecklistState;
 };
 
-const emptyDraft: BuildingDraft = {
-  sector: null,
-  compliance: null,
-  comment: "",
-  points: defaultBuildingPoints(),
-};
-
 /** Un item "defaut" mérite le badge Détails s'il porte au moins une information de détail. */
 function hasDetail(st: {
   qualitatif: string;
@@ -104,12 +98,15 @@ function BuildingTaskForm() {
   const { taskId } = useParams({ from: "/supervisor/building/$taskId" });
   const navigate = useNavigate();
   const { user } = useAuth();
-  const task = listAllTasks().find((t) => t.id === taskId && t.kind === "batiment");
+  const { data: task, isLoading: taskLoading } = useTask(taskId);
+  const { data: submissions } = useSubmissionsForTask(taskId);
+  const queryClient = useQueryClient();
   const draftKey = `building-${taskId}`;
-  // Checklist en vigueur au montage — reflète immédiatement les éditions admin (sans
-  // redéploiement) ; figée pour la durée de la saisie afin de ne pas déplacer les items
-  // sous les pieds du superviseur en cours de remplissage.
-  const buildingCategories = useMemo(getBuildingCategories, []);
+  // Checklist en vigueur (API, sans redéploiement) — []  le temps du chargement, complétée
+  // ensuite par l'effet ci-dessous si aucun brouillon n'était déjà présent.
+  const { data: catRes, isLoading: categoriesLoading } =
+    useDictionary<BuildingCategory[]>("building-categories");
+  const buildingCategories = useMemo(() => catRes?.data ?? [], [catRes]);
 
   const initial = useMemo<BuildingDraft>(() => {
     const stored = loadDraft<BuildingDraft>(draftKey);
@@ -121,10 +118,16 @@ function BuildingTaskForm() {
         points:
           stored.data.points && Object.keys(stored.data.points).length
             ? stored.data.points
-            : defaultBuildingPoints(),
+            : defaultBuildingPoints(buildingCategories),
       };
     }
-    return emptyDraft;
+    return {
+      sector: null,
+      compliance: null,
+      comment: "",
+      points: defaultBuildingPoints(buildingCategories),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
   const [sector, setSector] = useState<Sector | null>(initial.sector);
@@ -134,17 +137,30 @@ function BuildingTaskForm() {
   const [resumed] = useState(() => !!loadDraft(draftKey));
   const [savedAt, setSavedAt] = useState<number | null>(loadDraft(draftKey)?.savedAt ?? null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+
+  // La checklist arrive de façon asynchrone (API) : si aucun brouillon n'a déjà rempli
+  // "points" et que les catégories arrivent après le premier rendu, on complète.
+  useEffect(() => {
+    if (!resumed && buildingCategories.length && Object.keys(points).length === 0) {
+      setPoints(defaultBuildingPoints(buildingCategories));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildingCategories]);
   const [openDetails, setOpenDetails] = useState<Record<string, boolean>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
 
-  if (!task) {
+  if (!task || task.kind !== "batiment" || categoriesLoading) {
     return (
       <div className="p-8">
-        <p className="text-sm text-muted-foreground">Tâche introuvable.</p>
-        <Button asChild variant="outline" size="sm" className="mt-4">
-          <Link to="/supervisor/tasks">Retour aux tâches</Link>
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          {taskLoading || categoriesLoading ? "Chargement de la fiche…" : "Tâche introuvable."}
+        </p>
+        {!taskLoading && !categoriesLoading && (
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to="/supervisor/tasks">Retour aux tâches</Link>
+          </Button>
+        )}
       </div>
     );
   }
@@ -278,30 +294,24 @@ function BuildingTaskForm() {
           };
         }),
     );
-    const submittedBy = user?.name ?? "Superviseur";
-    enqueueSubmission("/api/public/building-inspections", {
+    enqueueSubmission(apiUrl("/submissions"), {
       taskId: task.id,
       form: task.form,
       zone: task.zone,
       notes: task.notes,
-      week: task.week,
-      dueDate: task.dueISO,
       group: task.group,
       sector,
       compliance,
       comment,
       defects,
-      submittedBy,
-      // Horodatage client — voir la limite documentée dans task-status.ts (nécessite un
-      // horodatage serveur fiable une fois le backend en place).
-      submittedAt: new Date().toISOString(),
       // Version du dictionnaire "checklist bâtiment" en vigueur à la soumission — une
       // édition ultérieure du modèle n'altère pas rétroactivement cette fiche.
-      modelVersion: { buildingCategories: getBuildingCategoriesVersion() },
+      modelVersion: { buildingCategories: catRes?.version ?? 0 },
     });
-    submitTask(task.id, submittedBy);
     clearDraft(draftKey);
     setConfirmOpen(false);
+    queryClient.invalidateQueries({ queryKey: taskKeys.all });
+    queryClient.invalidateQueries({ queryKey: submissionKeys.byTask(task.id) });
     toast.success("Fiche soumise — En attente de vérification", {
       description: navigator.onLine
         ? `${defects.length} défaut(s) transmis.`
@@ -318,7 +328,7 @@ function BuildingTaskForm() {
 
   /** Export PDF fidèle au contenu saisi (sprint 14) — disponible en brouillon ou après soumission. */
   const downloadPdf = () => {
-    const override = getTaskOverride(task.id);
+    const lastSubmission = submissions?.[0];
     const constats = buildingCategories.flatMap((cat) =>
       cat.items
         .filter((item) => pointState(points, item.id).status === "defaut")
@@ -339,7 +349,7 @@ function BuildingTaskForm() {
     exportFichePdf({
       title: task.form,
       subtitle: `${task.zone} — ${task.group}`,
-      status: override ? "En attente de vérification" : statusLabelBefore,
+      status: lastSubmission ? "En attente de vérification" : statusLabelBefore,
       meta: [
         { label: "Bâtiment / Notes", value: `${task.zone} · ${task.notes}` },
         { label: "Semaine", value: `S${task.week} · Bimestre ${task.bimester}` },
@@ -358,8 +368,8 @@ function BuildingTaskForm() {
       ],
       constats,
       comment,
-      submittedBy: override?.submittedBy ?? null,
-      submittedAt: override?.submittedAt ?? null,
+      submittedBy: lastSubmission?.submittedBy.name ?? null,
+      submittedAt: lastSubmission?.submittedAt ?? null,
     });
   };
 
@@ -529,7 +539,7 @@ function BuildingTaskForm() {
           <div className="mb-1 flex items-center justify-between">
             <div className="text-sm font-semibold">Checklist bâtiment</div>
             <span className="text-xs text-muted-foreground">
-              {buildingCategories.length} catégories · {buildingItemCount()} items
+              {buildingCategories.length} catégories · {buildingItemCount(buildingCategories)} items
             </span>
           </div>
           <p className="mb-4 text-xs text-muted-foreground">

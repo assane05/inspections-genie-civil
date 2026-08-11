@@ -17,8 +17,6 @@
  * charges — à compléter dès que la liste réelle sera communiquée.
  */
 
-import { createVersionedDictionary } from "./dictionary-store";
-
 export type SegmentationKind = "linear" | "single";
 
 export type FicheType = {
@@ -211,20 +209,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
   },
 ];
 
-const ficheCatalogStore = createVersionedDictionary<FicheType[]>(
-  "fiche-catalog",
-  DEFAULT_FICHE_CATALOG,
-);
-
-/** Catalogue de fiches actuellement en vigueur (édité par l'admin ou par défaut). */
-export function getFicheCatalog(): FicheType[] {
-  return ficheCatalogStore.current();
-}
-export const getFicheCatalogVersion = ficheCatalogStore.version;
-export const saveFicheCatalog = ficheCatalogStore.save;
-export const resetFicheCatalog = ficheCatalogStore.resetToDefaults;
-export const ficheCatalogCustomized = ficheCatalogStore.isCustomized;
-
 function normalize(label: string): string {
   return label
     .trim()
@@ -233,10 +217,11 @@ function normalize(label: string): string {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-/** Retrouve la fiche du catalogue à partir du libellé porté par la tâche (insensible à la casse/accents). */
-export function resolveFicheType(formLabel: string): FicheType | undefined {
+/** Retrouve la fiche du catalogue à partir du libellé porté par la tâche (insensible à la casse/accents).
+ * `catalog` vient de l'API (voir src/lib/queries/dictionary.ts) — plus de lecture localStorage ici. */
+export function resolveFicheType(formLabel: string, catalog: FicheType[]): FicheType | undefined {
   const target = normalize(formLabel);
-  return getFicheCatalog().find((f) => normalize(f.label) === target);
+  return catalog.find((f) => normalize(f.label) === target);
 }
 
 export type PhysicalSegment = { id: string; label: string };

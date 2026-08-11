@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, Building2, Clock, Download, Play, RotateCcw, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  Clock,
+  Download,
+  Loader2,
+  Play,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,14 +31,13 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { loadDraft } from "@/lib/offline-queue";
-import { getTaskOverride } from "@/lib/task-status";
+import { useTasks } from "@/lib/queries/tasks";
 import {
   applyFilters,
   daysUntil,
   downloadCsv,
   dueState,
   emptyFilters,
-  tasksForGroups,
   tasksToCsv,
   type TaskFilters,
 } from "@/lib/tasks";
@@ -79,7 +87,7 @@ function SupervisorTasks() {
   const [page, setPage] = useState(1);
 
   const groups = user?.groups ?? [];
-  const scoped = useMemo(() => tasksForGroups(groups), [groups.join("|")]);
+  const { data: scoped = [], isLoading, isError } = useTasks();
   const filtered = useMemo(() => applyFilters(scoped, filters), [scoped, filters]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -243,8 +251,25 @@ function SupervisorTasks() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Chargement des tâches…
+                  </TableCell>
+                </TableRow>
+              )}
+              {isError && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-destructive">
+                    Impossible de charger les tâches. Vérifiez votre connexion — les fiches déjà
+                    ouvertes restent utilisables hors-ligne.
+                  </TableCell>
+                </TableRow>
+              )}
               {rows.map((r) => {
-                const override = getTaskOverride(r.id);
                 const state = dueState(r);
                 const draft =
                   typeof window !== "undefined" &&
@@ -294,12 +319,6 @@ function SupervisorTasks() {
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={r.status} />
-                      {override && (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          Soumis par {override.submittedBy} ·{" "}
-                          {new Date(override.submittedAt).toLocaleString("fr-FR")}
-                        </div>
-                      )}
                     </TableCell>
                     <TableCell className="pr-5 text-right">
                       <Button
@@ -320,7 +339,7 @@ function SupervisorTasks() {
                   </TableRow>
                 );
               })}
-              {rows.length === 0 && (
+              {!isLoading && !isError && rows.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={6}
