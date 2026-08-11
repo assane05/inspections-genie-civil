@@ -1,15 +1,8 @@
-/**
- * Saisie hors-ligne : brouillons persistés localement + file d'attente de
- * soumissions rejouée automatiquement à la reconnexion.
- * Aucune perte de données en cas de coupure réseau pendant la saisie.
- */
-
 const DRAFT_PREFIX = "las.draft.";
 const QUEUE_KEY = "las.submission.queue";
 
 export type QueuedSubmission = {
   id: string;
-  /** Endpoint relatif ou absolu vers lequel rejouer la soumission. */
   endpoint: string;
   payload: unknown;
   createdAt: number;
@@ -66,26 +59,8 @@ export function clearDraft(formId: string) {
 }
 
 /** --- File d'attente de soumissions --- */
-
-// export function enqueueSubmission(endpoint: string, payload: unknown): QueuedSubmission {
-//   const item: QueuedSubmission = {
-//     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-//     endpoint,
-//     payload,
-//     createdAt: Date.now(),
-//     attempts: 0,
-//   };
-//   writeQueue([...readQueue(), item]);
-//   void flushQueue();
-//   return item;
-// }
-
-// APRÈS
 export function enqueueSubmission(endpoint: string, payload: unknown): QueuedSubmission {
   const item: QueuedSubmission = {
-    // uuid stable dès la mise en file — sert aussi de clé d'idempotence côté serveur
-    // (voir flushQueue ci-dessous), pour ne jamais créer de soumission en double
-    // si la réponse se perd après un envoi déjà réussi.
     id: crypto.randomUUID(),
     endpoint,
     payload,
@@ -123,7 +98,7 @@ export async function flushQueue(): Promise<{ sent: number; remaining: number }>
             ? { ...q, attempts: q.attempts + 1, lastError: String((error as Error).message) }
             : q,
         );
-        break; // on réessaiera à la prochaine reconnexion
+        break;
       }
       writeQueue(queue);
     }
