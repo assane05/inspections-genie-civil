@@ -140,7 +140,7 @@ function LoginPage() {
           <div className="w-full max-w-md">
             <div>
               <h1 className="font-display text-3xl font-bold tracking-tight">
-                {t("Bon retour", "Welcome back")}
+                {t("Bon Retour", "Welcome back")}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {t(

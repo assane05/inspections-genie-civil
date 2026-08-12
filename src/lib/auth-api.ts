@@ -1,15 +1,3 @@
-/**
- * Adaptateur d'authentification — À BRANCHER SUR VOTRE BACKEND.
- *
- * Règles de sécurité respectées ici :
- *  - aucun mot de passe ni secret n'est stocké en dur dans le front (AUD-01) ;
- *  - la vérification du mot de passe (hachage bcrypt/argon2) doit être faite
- *    côté serveur ; le front n'envoie que l'identifiant + le mot de passe
- *    via HTTPS et reçoit un profil + une durée de session ;
- *  - l'URL du backend se configure via la variable d'environnement
- *    `VITE_AUTH_API_URL` (ex : https://api.votre-domaine.com).
- */
-
 export type Role = "admin" | "supervisor";
 
 export type SessionUser = {
@@ -18,26 +6,21 @@ export type SessionUser = {
   username: string;
   email: string;
   role: Role;
-  /** Un utilisateur appartient à un ou plusieurs groupes (Supervisor 1–5). */
   groups: string[];
   initials: string;
-  /** Un compte désactivé ne peut plus se connecter (cf. gestion des utilisateurs). */
   isActive: boolean;
 };
 
 export type AuthResult = {
   user: SessionUser;
-  /** Durée de vie absolue de la session en secondes. */
   expiresIn: number;
 };
 
 const API_URL = import.meta.env.VITE_AUTH_API_URL as string | undefined;
 
-/** Session absolue : 8 h. Inactivité : 15 min (voir auth.tsx). */
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 export const IDLE_TIMEOUT_SECONDS = 15 * 60;
 
-/** Groupes de supervision — source unique (assignation de tâches, gestion des utilisateurs). */
 export const SUPERVISOR_GROUPS = [
   "Supervisor 1",
   "Supervisor 2",
@@ -46,11 +29,6 @@ export const SUPERVISOR_GROUPS = [
   "Supervisor 5",
 ];
 
-/**
- * Annuaire de démonstration — utilisé uniquement quand VITE_AUTH_API_URL n'est pas
- * défini (aucun backend branché). Sans rapport avec le CRUD utilisateurs réel
- * (src/lib/queries/users.ts), qui passe toujours par l'API.
- */
 const DEMO_DIRECTORY: SessionUser[] = [
   {
     id: "u-admin-1",
@@ -86,7 +64,6 @@ export async function authenticate(identifier: string, password: string): Promis
     const res = await fetch(`${API_URL.replace(/\/$/, "")}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // cookies httpOnly + secure gérés par le backend
       credentials: "include",
       body: JSON.stringify({ identifier, password }),
     });
@@ -112,9 +89,7 @@ export async function revokeSession(): Promise<void> {
       method: "POST",
       credentials: "include",
     });
-  } catch {
-    /* déconnexion locale quand même */
-  }
+  } catch {}
 }
 
 export function homeRouteFor(role: Role): string {
