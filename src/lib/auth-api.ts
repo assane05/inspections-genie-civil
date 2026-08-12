@@ -73,7 +73,11 @@ export async function authenticate(identifier: string, password: string): Promis
     return { user: data.user, expiresIn: data.expiresIn ?? SESSION_TTL_SECONDS };
   }
 
-  // --- Mode démonstration (aucun backend branché) ---
+  if (import.meta.env.PROD) {
+    throw new AuthError("backend_not_configured");
+  }
+
+  // mode demo
   await new Promise((r) => setTimeout(r, 500));
   const user = findDemoUser(identifier);
   if (!user || !user.isActive || password.trim().length < 8) {

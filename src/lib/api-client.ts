@@ -1,11 +1,3 @@
-/**
- * Client API partagé — toutes les requêtes vers le backend (voir
- * las-inspections-api/README.md pour le détail des routes).
- *
- * Réutilise VITE_AUTH_API_URL (même variable que src/lib/auth-api.ts) :
- * le même backend sert l'authentification et le reste de l'API.
- */
-
 const API_URL = import.meta.env.VITE_AUTH_API_URL as string | undefined;
 
 export function hasApiBackend(): boolean {

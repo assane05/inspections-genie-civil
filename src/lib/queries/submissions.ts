@@ -1,9 +1,3 @@
-/**
- * Historique des soumissions d'une tâche — remplace l'usage de
- * task-status.ts (override localStorage) pour retrouver l'auteur et
- * l'horodatage réels d'une fiche déjà soumise (voir
- * las-inspections-api/src/routes/submissions.ts).
- */
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 
@@ -29,7 +23,6 @@ export const submissionKeys = {
   byTask: (taskId: string) => [...submissionKeys.all, "task", taskId] as const,
 };
 
-/** Soumissions d'une tâche, les plus récentes en premier. */
 export function useSubmissionsForTask(taskId: string | undefined) {
   return useQuery({
     queryKey: submissionKeys.byTask(taskId ?? ""),

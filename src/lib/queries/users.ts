@@ -1,8 +1,3 @@
-/**
- * Utilisateurs — remplace src/lib/user-directory.ts (localStorage) par de
- * vrais appels à l'API backend (voir las-inspections-api/src/routes/users.ts).
- * Réservé à l'admin côté backend.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { Role, SessionUser } from "@/lib/auth-api";

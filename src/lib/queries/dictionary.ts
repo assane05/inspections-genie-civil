@@ -1,8 +1,3 @@
-/**
- * Dictionnaire versionné (familles, catalogue de fiches, checklist bâtiment) —
- * remplace src/lib/dictionary-store.ts (localStorage) par de vrais appels à
- * l'API backend (voir las-inspections-api/src/routes/dictionary.ts).
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 
@@ -15,7 +10,6 @@ export const dictionaryKeys = {
   detail: (key: DictionaryKey) => [...dictionaryKeys.all, key] as const,
 };
 
-/** Lecture — accessible à tout utilisateur connecté (un superviseur en a besoin pour remplir une fiche). */
 export function useDictionary<T>(key: DictionaryKey) {
   return useQuery({
     queryKey: dictionaryKeys.detail(key),
@@ -23,7 +17,6 @@ export function useDictionary<T>(key: DictionaryKey) {
   });
 }
 
-/** Écriture — réservée à l'admin (appliqué aussi côté serveur). */
 export function useSaveDictionary<T>(key: DictionaryKey) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -32,7 +25,6 @@ export function useSaveDictionary<T>(key: DictionaryKey) {
   });
 }
 
-/** Réinitialisation aux valeurs par défaut — réservée à l'admin. */
 export function useResetDictionary<T>(key: DictionaryKey) {
   const queryClient = useQueryClient();
   return useMutation({

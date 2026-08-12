@@ -1,15 +1,7 @@
-/**
- * Tâches — remplace src/lib/admin-tasks.ts (localStorage) par de vrais appels
- * à l'API backend (voir las-inspections-api/src/routes/tasks.ts).
- *
- * Le scoping par groupe pour un superviseur est fait côté serveur (session
- * authentifiée) — pas besoin de le refaire ici.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { TaskRow } from "@/lib/mock-data";
 
-/** Forme brute renvoyée par l'API (dueDate en ISO datetime, pas de libellé FR). */
 type ApiTask = Omit<TaskRow, "dueISO" | "dueDate"> & { dueDate: string };
 
 function frLabel(iso: string): string {
@@ -54,8 +46,7 @@ function toQueryString(filters: TaskQueryFilters): string {
 }
 
 /**
- * Liste des tâches. Sans filtre, un superviseur reçoit automatiquement ses
- * propres tâches (scoping serveur) ; l'admin reçoit tout.
+ *  l'admin reçoit tout.
  */
 export function useTasks(filters: TaskQueryFilters = {}) {
   return useQuery({
