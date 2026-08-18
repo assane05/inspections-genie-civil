@@ -196,20 +196,15 @@ export const formRows: FormRow[] = [
 export type TaskRow = {
   id: string;
   form: string;
-  /** Date limite ISO (yyyy-mm-dd) — source de vérité pour tri/filtre/retard. */
   dueISO: string;
-  /** Libellé lisible de la date limite. */
   dueDate: string;
   zone: string;
   notes: string;
   group: string;
   year: number;
-  /** Bimestre 1..6 */
   bimester: number;
-  /** Semaine ISO */
   week: number;
   status: "not_submitted" | "in_progress" | "pending" | "verified";
-  /** "horizontal" (fiche de piste/route/etc., par défaut) ou "batiment" (en-tête + checklist A→H). */
   kind: "horizontal" | "batiment";
 };
 

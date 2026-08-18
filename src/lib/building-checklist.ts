@@ -1,29 +1,8 @@
-/**
- * Checklist bâtiment — catégories A → H.
- *
- * Les 8 catégories et leur ordre sont fixés par le cahier des charges.
- * Le contenu des items de chaque catégorie est une proposition basée sur des
- * points de contrôle bâtiment standards — À VALIDER PAR LES SUPERVISEURS avant
- * mise en production (cf. critère d'acceptation "Tous les items de chaque
- * catégorie présents et validés par les superviseurs").
- *
- * Saisie par item (sprint 6) : chaque item est à "N/A" par défaut ("rien à
- * signaler" — équivalent bâtiment du "RAS" de la fiche horizontale) ; sur
- * défaut, les mêmes champs de détail (Sévérité, Action/localisation,
- * Commentaire, Photo) s'ouvrent, avec la même logique par exception que la
- * fiche horizontale. On réutilise donc directement PointState /
- * ChecklistState de inspection-checklist.ts, en repurposant l'état "ras"
- * pour représenter "N/A" côté bâtiment (même mécanique, libellé différent) —
- * contrairement à la fiche horizontale, l'état "non_inspecte" n'est jamais
- * utilisé ici : chaque item est explicitement initialisé à "N/A".
- */
-
 import { emptyPoint, pointState, type ChecklistState } from "@/lib/inspection-checklist";
 
 export type BuildingItem = { id: string; label: string };
 export type BuildingCategory = {
   id: string;
-  /** Lettre de catégorie A → H, imposée par le cahier des charges. */
   code: string;
   label: string;
   items: BuildingItem[];
@@ -127,12 +106,8 @@ export function buildingItemCount(categories: BuildingCategory[]): number {
   return categories.reduce((n, c) => n + c.items.length, 0);
 }
 
-/** État "N/A par défaut" pour un item bâtiment (repurpose "ras" du modèle générique). */
 export const naPoint = { ...emptyPoint, status: "ras" } as const;
 
-/** Initialise tous les items bâtiment à "N/A" — jamais de "non_inspecte" côté bâtiment.
- * `categories` vient de l'API (voir src/lib/queries/dictionary.ts) — plus de lecture
- * localStorage ici. */
 export function defaultBuildingPoints(categories: BuildingCategory[]): ChecklistState {
   const out: ChecklistState = {};
   for (const cat of categories) {

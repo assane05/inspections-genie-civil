@@ -1,7 +1,3 @@
-/**
- * Enregistrement du service worker (PWA).
- * Jamais actif en développement ni dans les aperçus Lovable.
- */
 const SW_URL = "/sw.js";
 
 function isBlockedContext(): boolean {
@@ -42,7 +38,6 @@ export function registerServiceWorker() {
   });
 }
 
-/** Force HTTPS en production (redirection http → https). */
 export function enforceHttps() {
   if (typeof window === "undefined") return;
   if (!import.meta.env.PROD) return;

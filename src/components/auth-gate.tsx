@@ -12,10 +12,6 @@ function requiredRoleFor(pathname: string): Role | null {
   return "admin";
 }
 
-/**
- * Garde d'accès : redirige vers la connexion si la session est absente/expirée,
- * et vers l'espace autorisé si le rôle ne correspond pas à l'écran demandé.
- */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { ready, user } = useAuth();
   const navigate = useNavigate();

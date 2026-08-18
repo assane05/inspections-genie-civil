@@ -37,7 +37,6 @@ export const Route = createFileRoute("/users")({
   }),
 });
 
-/** Un compte du jeu de démonstration (protégé contre la suppression, désactivable seulement). */
 function isSeedAccount(id: string) {
   return id === "u-admin-1" || /^u-supervisor-\d+$/.test(id);
 }

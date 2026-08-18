@@ -125,11 +125,6 @@ export type ValueUpsertInput = {
   comment?: string | null;
 };
 
-/**
- * Upsert par lot. En ligne : PATCH direct. Hors-ligne (ou échec réseau) :
- * mise en file (méthode PATCH) rejouée automatiquement à la reconnexion —
- * sûr grâce à l'idempotence garantie côté serveur (ON CONFLICT).
- */
 export function usePatchInspectionValues(inspectionId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -140,7 +135,7 @@ export function usePatchInspectionValues(inspectionId: string) {
           { values },
         );
       } catch (err) {
-        if (err instanceof ApiError) throw err; // erreur métier (422/403...) : ne pas mettre en file
+        if (err instanceof ApiError) throw err;
         enqueueSubmission(apiUrl(`/api/inspections/${inspectionId}/values`), { values }, "PATCH");
         return { values: [] as InspectionValue[] };
       }

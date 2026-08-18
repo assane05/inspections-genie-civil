@@ -7,7 +7,6 @@ export type TaskFilters = {
   bimester: string;
   week: string;
   status: string;
-  /** Filtre groupe — utilisé côté admin (vue tous groupes) ; "all" partout ailleurs. */
   group: string;
 };
 
@@ -23,7 +22,6 @@ export const emptyFilters: TaskFilters = {
 
 export type DueState = "overdue" | "due_soon" | "ok" | "done";
 
-/** Nombre de jours entre aujourd'hui et l'échéance (négatif = en retard). */
 export function daysUntil(iso: string, now = new Date()): number {
   const due = new Date(iso + "T00:00:00").getTime();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -38,13 +36,11 @@ export function dueState(task: TaskRow, now = new Date()): DueState {
   return "ok";
 }
 
-/** Progression globale "soumises / total" (sprint 15). Soumise = pending ou verified. */
 export function submissionProgress(rows: TaskRow[]): { submitted: number; total: number } {
   const submitted = rows.filter((t) => t.status === "pending" || t.status === "verified").length;
   return { submitted, total: rows.length };
 }
 
-/** Progression "X of Y" par formulaire (sprint 13). */
 export function progressByForm(
   rows: TaskRow[],
 ): { form: string; submitted: number; total: number }[] {
@@ -109,7 +105,6 @@ function csvCell(v: string | number) {
   return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Génère le CSV de la liste **déjà filtrée**. */
 export function tasksToCsv(rows: TaskRow[]): string {
   const lines = [CSV_HEADERS.join(";")];
   for (const t of rows) {

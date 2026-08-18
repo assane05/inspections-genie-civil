@@ -1,33 +1,10 @@
-/**
- * Catalogue des fiches d'inspection horizontales.
- *
- * Chaque fiche déclare :
- *  - les catégories de contrôle qui s'y appliquent (cf. inspection-checklist.ts) ;
- *  - son mode de segmentation physique par défaut ("linear" → 1/3·2/3·3/3,
- *    "single" → un seul segment, l'ouvrage/la zone dans son ensemble).
- *
- * `confirmed: true` = nom de fiche retrouvé tel quel dans mock-data.ts.
- * `confirmed: false` = entrée absente des données actuelles, à valider par les
- * superviseurs avant mise en production (cf. critère d'acceptation "100% des
- * fiches validées par les superviseurs").
- *
- * IMPORTANT : mock-data.ts ne contient que 18 fiches distinctes (une fois la
- * casse normalisée), pas ~26. Les entrées confirmées ci-dessous couvrent ces
- * 18 ; il en manque donc encore pour atteindre le compte cible du cahier des
- * charges — à compléter dès que la liste réelle sera communiquée.
- */
-
 export type SegmentationKind = "linear" | "single";
 
 export type FicheType = {
   id: string;
-  /** Code interne LAS, ex. MAINT/EN/73/00. Absent pour les fiches non encore codifiées. */
   code: string | null;
-  /** Libellé exact tel qu'utilisé dans les tâches / formulaires. */
   label: string;
-  /** Groupe d'appartenance (cf. byGroup / availableForms dans mock-data.ts). */
   group: string;
-  /** Catégories de contrôle applicables (ids de familles dans inspection-checklist.ts). */
   categories: string[];
   segmentation: SegmentationKind;
   confirmed: boolean;
@@ -50,7 +27,6 @@ const OUVRAGE_SET = ["drainage", "abords", "surface"];
 const BANDE_SET = ["surface", "abords", "drainage"];
 
 export const DEFAULT_FICHE_CATALOG: FicheType[] = [
-  // --- Runway ---
   {
     id: "runway",
     code: "MAINT/EN/73/00",
@@ -76,7 +52,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(BALISAGE_SET),
   },
 
-  // --- Taxiway ---
   {
     id: "taxiway",
     code: "MAINT/EN/74/00",
@@ -102,7 +77,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(BALISAGE_SET),
   },
 
-  // --- Apron / GSE Road ---
   {
     id: "apron",
     code: "MAINT/EN/75/00",
@@ -136,7 +110,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(BALISAGE_SET),
   },
 
-  // --- Service Road ---
   {
     id: "service-road",
     code: "MAINT/EN/77/00",
@@ -146,7 +119,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(ROUTE_SET),
   },
 
-  // --- Access Road / Parking ---
   {
     id: "access-road",
     code: "MAINT/EN/78/00",
@@ -172,7 +144,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(BALISAGE_SET),
   },
 
-  // --- Fence / Chemin de Ronde Int ---
   {
     id: "fence",
     code: "MAINT/EN/80/00",
@@ -198,7 +169,6 @@ export const DEFAULT_FICHE_CATALOG: FicheType[] = [
     ...linear(BALISAGE_SET),
   },
 
-  // --- Ouvrage de Drainage ---
   {
     id: "drainage",
     code: "MAINT/EN/81/00",
@@ -217,8 +187,6 @@ function normalize(label: string): string {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-/** Retrouve la fiche du catalogue à partir du libellé porté par la tâche (insensible à la casse/accents).
- * `catalog` vient de l'API (voir src/lib/queries/dictionary.ts) — plus de lecture localStorage ici. */
 export function resolveFicheType(formLabel: string, catalog: FicheType[]): FicheType | undefined {
   const target = normalize(formLabel);
   return catalog.find((f) => normalize(f.label) === target);
@@ -228,11 +196,6 @@ export type PhysicalSegment = { id: string; label: string };
 
 const RANGE_RE = /^(.*?\D)(\d+)\s*(?:à|a|-)\s*(\d+)\s*$/i;
 
-/**
- * Calcule les segments physiques d'une tâche.
- * 1) Plage numérique détectée dans la zone (ex. "SR 5 à 8") → un segment par numéro.
- * 2) Sinon, mode de segmentation par défaut de la fiche : linéaire (1/3·2/3·3/3) ou unique.
- */
 export function segmentsForTask(
   fiche: FicheType | undefined,
   task: { zone: string },
@@ -253,7 +216,6 @@ export function segmentsForTask(
     return [{ id: "zone", label: task.zone || "Zone unique" }];
   }
 
-  // Par défaut (fiche inconnue du catalogue ou segmentation "linear") : découpage linéaire en tiers.
   return [
     { id: "1-3", label: "1/3" },
     { id: "2-3", label: "2/3" },

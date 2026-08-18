@@ -1,14 +1,3 @@
-/**
- * Compression d'image côté client avant stockage (sprint 9).
- *
- * Sans backend, les photos restent en data URL locale (brouillon localStorage +
- * file d'attente hors-ligne) — mais on les redimensionne et ré-encode en JPEG
- * pour limiter la volumétrie, ce qui est la partie de la compression réalisable
- * côté front. Le "stockage objets fiable" (upload réel, URLs publiques stables,
- * correction des vignettes cassées en URL localhost) nécessite un backend et
- * reste hors de portée tant que celui-ci n'existe pas — voir le README du sprint.
- */
-
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.72;
 
@@ -31,7 +20,6 @@ export function compressImage(file: File): Promise<string> {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          // Repli : pas de canvas disponible, on garde l'image d'origine plutôt que d'échouer.
           resolve(String(reader.result));
           return;
         }

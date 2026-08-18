@@ -112,7 +112,6 @@ export async function flushQueue(): Promise<{ sent: number; remaining: number }>
   }
 }
 
-/** Rejoue automatiquement la file dès que le réseau revient. */
 export function startQueueReplay() {
   if (typeof window === "undefined") return () => {};
   const onOnline = () => void flushQueue();

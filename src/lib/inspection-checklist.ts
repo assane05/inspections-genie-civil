@@ -1,21 +1,7 @@
-/**
- * Modèle de fiche d'inspection « par famille ».
- * Remplace la matrice dense : chaque famille regroupe des segments,
- * chaque segment une liste de points de contrôle.
- * Tous les points sont à RAS par défaut ; seule l'exception est saisie.
- */
-
 export type CheckPoint = { id: string; label: string };
 export type Segment = { id: string; label: string; points: CheckPoint[] };
 export type Family = { id: string; label: string; hint?: string; segments: Segment[] };
 
-/**
- * Un point de contrôle a 3 états distincts :
- * - "non_inspecte" (état initial) : point pas encore renseigné, traçable comme tel.
- * - "ras"    : inspecté, rien à signaler.
- * - "defaut" : inspecté, défaut relevé → ouvre la saisie détaillée.
- * "non_inspecte" ne doit jamais être confondu avec "ras".
- */
 export type PointStatus = "non_inspecte" | "ras" | "defaut";
 
 export type Severity = "minor" | "major" | "yes";
@@ -30,23 +16,10 @@ export const SEVERITY_LABELS: Record<Severity, string> = {
 
 export type PointState = {
   status: PointStatus;
-  /** Sévérité du défaut — requise dès le passage en "defaut". */
   severity: Severity | null;
-  /** Révélé qualitatif : description qualitative du défaut constaté. */
   qualitatif: string;
-  /** Localisation précise du défaut sur le segment. */
   localisation: string;
-  /**
-   * Photo(s) du défaut — une ou plusieurs, capturées directement depuis l'appareil
-   * photo sans quitter la saisie. Encodées en data URL compressée (en attendant le
-   * stockage objets côté backend).
-   */
   photos: string[];
-  /**
-   * Lien vers l'action corrective (ex. « Ouverture d'une fiche de réparation N°… ») —
-   * un constat non conforme peut référencer une fiche d'action corrective, à titre
-   * traçable mais non obligatoire.
-   */
   actionCorrective: string;
 };
 
@@ -65,7 +38,6 @@ function seg(id: string, label: string, points: string[]): Segment {
   return { id, label, points: points.map((p, i) => ({ id: `${id}.${i + 1}`, label: p })) };
 }
 
-/** Familles génériques applicables à toutes les zones aéroportuaires — valeurs par défaut. */
 export const DEFAULT_FAMILIES: Family[] = [
   {
     id: "surface",
@@ -157,19 +129,10 @@ export const DEFAULT_FAMILIES: Family[] = [
   },
 ];
 
-/** Renvoie les catégories de contrôle applicables, dans l'ordre demandé par la fiche.
- * `families` vient de l'API (voir src/lib/queries/dictionary.ts) — plus de lecture
- * localStorage ici. */
 export function categoriesForGroup(categoryIds: string[], families: Family[]): Family[] {
   return categoryIds.map((id) => families.find((f) => f.id === id)).filter((f): f is Family => !!f);
 }
 
-/**
- * Clone un ensemble de catégories en préfixant chaque id de point par un segment
- * physique (ex. "1-3::surface.chaussee.1"), pour que le même jeu de catégories
- * puisse être répété sous plusieurs segments physiques (1/3, 2/3, 3/3, SR 5, SR 6…)
- * sans collision de clés dans le ChecklistState.
- */
 export function namespaceFamilies(families: Family[], prefix: string): Family[] {
   return families.map((f) => ({
     ...f,

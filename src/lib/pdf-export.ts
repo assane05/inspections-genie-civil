@@ -1,13 +1,7 @@
 import { jsPDF } from "jspdf";
 
-/**
- * Export PDF d'une fiche remplie (sprint 14) — en-tête, constats, photos.
- * Génère un PDF fidèle au contenu réellement saisi (pas de données inventées :
- * un champ vide reste vide dans le PDF) et déclenche son téléchargement.
- */
-
 const MARGIN = 14;
-const PAGE_WIDTH = 210; // A4 portrait, mm
+const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 const THUMB = 28;
@@ -70,7 +64,6 @@ export function exportFichePdf(data: PdfFicheData) {
   doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
   y += 6;
 
-  // Métadonnées (2 colonnes)
   doc.setFontSize(9);
   const colWidth = CONTENT_WIDTH / 2;
   data.meta.forEach((m, i) => {
@@ -148,7 +141,6 @@ export function exportFichePdf(data: PdfFicheData) {
     y += 5;
   }
 
-  // Commentaire général
   ensureSpace(12);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -161,7 +153,6 @@ export function exportFichePdf(data: PdfFicheData) {
   doc.text(commentLines, MARGIN, y);
   y += commentLines.length * 4.2 + 6;
 
-  // Auteur / horodatage (sprint 12) — fidèle : n'affiche rien si pas encore soumis.
   ensureSpace(6);
   doc.setFontSize(8);
   doc.setTextColor(120);

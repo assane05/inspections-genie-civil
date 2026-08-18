@@ -38,7 +38,6 @@ function LoginPage() {
 
   const t = (fr: string, en: string) => (lang === "fr" ? fr : en);
 
-  // Session encore valide : on renvoie directement vers l'espace du rôle.
   useEffect(() => {
     if (ready && user) navigate({ to: homeRouteFor(user.role), replace: true });
   }, [ready, user, navigate]);
@@ -77,7 +76,6 @@ function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-2">
-        {/* Panneau visuel */}
         <aside className="relative hidden overflow-hidden lg:flex">
           <img
             src={loginHero}

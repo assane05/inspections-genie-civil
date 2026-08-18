@@ -45,9 +45,6 @@ function toQueryString(filters: TaskQueryFilters): string {
   return qs ? `?${qs}` : "";
 }
 
-/**
- *  l'admin reçoit tout.
- */
 export function useTasks(filters: TaskQueryFilters = {}) {
   return useQuery({
     queryKey: taskKeys.list(filters),
@@ -74,7 +71,6 @@ export type CreateTasksInput = {
   kind: TaskRow["kind"];
 };
 
-/** Création en lot (une tâche par combinaison zone × groupe) — assignation individuelle ou en lot. */
 export function useCreateTasks() {
   const queryClient = useQueryClient();
   return useMutation({
