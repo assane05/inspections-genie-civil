@@ -4,6 +4,7 @@ const QUEUE_KEY = "las.submission.queue";
 export type QueuedSubmission = {
   id: string;
   endpoint: string;
+  method: "POST" | "PATCH";
   payload: unknown;
   createdAt: number;
   attempts: number;
@@ -59,10 +60,15 @@ export function clearDraft(formId: string) {
 }
 
 /** --- File d'attente de soumissions --- */
-export function enqueueSubmission(endpoint: string, payload: unknown): QueuedSubmission {
+export function enqueueSubmission(
+  endpoint: string,
+  payload: unknown,
+  method: "POST" | "PATCH" = "POST",
+): QueuedSubmission {
   const item: QueuedSubmission = {
     id: crypto.randomUUID(),
     endpoint,
+    method,
     payload,
     createdAt: Date.now(),
     attempts: 0,
@@ -84,7 +90,7 @@ export async function flushQueue(): Promise<{ sent: number; remaining: number }>
     for (const item of [...queue]) {
       try {
         const res = await fetch(item.endpoint, {
-          method: "POST",
+          method: item.method,
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ ...(item.payload as object), idempotencyKey: item.id }),

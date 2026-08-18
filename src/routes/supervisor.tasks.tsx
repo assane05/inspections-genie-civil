@@ -42,6 +42,7 @@ import {
   type TaskFilters,
 } from "@/lib/tasks";
 import { StatusBadge } from "@/routes/dashboard";
+import { useAssignments } from "@/lib/queries/assignments";
 
 export const Route = createFileRoute("/supervisor/tasks")({
   component: SupervisorTasks,
@@ -87,7 +88,7 @@ function SupervisorTasks() {
   const [page, setPage] = useState(1);
 
   const groups = user?.groups ?? [];
-  const { data: scoped = [], isLoading, isError } = useTasks();
+  const { data: scoped = [], isLoading, isError } = useAssignments();
   const filtered = useMemo(() => applyFilters(scoped, filters), [scoped, filters]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -333,7 +334,7 @@ function SupervisorTasks() {
                         }
                       >
                         <Play className="h-3.5 w-3.5" />
-                        {draft ? "Reprendre" : "Commencer"}
+                        Ouvrir
                       </Button>
                     </TableCell>
                   </TableRow>

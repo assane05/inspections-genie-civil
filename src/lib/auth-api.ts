@@ -11,6 +11,40 @@ export type SessionUser = {
   isActive: boolean;
 };
 
+type BackendRole = "superviseur" | "administrateur" | "approbateur";
+type BackendSessionUser = {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string | null;
+  role: BackendRole;
+  groupIds: string[];
+  groupNames: string[];
+  isActive: boolean;
+};
+
+function toFrontendRole(role: BackendRole): Role {
+  return role === "superviseur" ? "supervisor" : "admin";
+}
+
+function initialsFor(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
+
+function fromBackendUser(u: BackendSessionUser): SessionUser {
+  return {
+    id: u.id,
+    name: u.displayName,
+    username: u.username,
+    email: u.email ?? "",
+    role: toFrontendRole(u.role),
+    groups: u.groupNames,
+    initials: initialsFor(u.displayName),
+    isActive: u.isActive,
+  };
+}
+
 export type AuthResult = {
   user: SessionUser;
   expiresIn: number;
@@ -68,9 +102,9 @@ export async function authenticate(identifier: string, password: string): Promis
       body: JSON.stringify({ identifier, password }),
     });
     if (!res.ok) throw new AuthError("invalid_credentials");
-    const data = (await res.json()) as Partial<AuthResult>;
+    const data = (await res.json()) as { user?: BackendSessionUser; expiresIn?: number };
     if (!data.user) throw new AuthError("invalid_response");
-    return { user: data.user, expiresIn: data.expiresIn ?? SESSION_TTL_SECONDS };
+    return { user: fromBackendUser(data.user), expiresIn: data.expiresIn ?? SESSION_TTL_SECONDS };
   }
 
   if (import.meta.env.PROD) {
