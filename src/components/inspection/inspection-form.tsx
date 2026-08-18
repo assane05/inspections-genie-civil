@@ -14,12 +14,6 @@ import { InspectionHeaderFields } from "@/components/inspection/inspection-heade
 import { InspectionSubmitBar } from "@/components/inspection/inspection-submit-bar";
 import { Button } from "@/components/ui/button";
 
-/**
- * Point d'entrée : à partir d'une assignation (assignmentId), résout
- * l'inspection associée (création idempotente si première visite — reprise
- * de brouillon sinon), charge le schéma de la fiche et l'état courant des
- * constats, puis rend une section par famille/catégorie.
- */
 export function InspectionForm({
   assignmentId,
   onSubmitted,
@@ -37,7 +31,6 @@ export function InspectionForm({
       onSuccess: (inspection) => setInspectionId(inspection.id),
       onError: () => toast.error("Impossible d'ouvrir la fiche", { description: "Réessayez." }),
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentId]);
 
   const inspectionQuery = useInspection(inspectionId ?? undefined);

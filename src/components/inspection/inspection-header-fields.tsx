@@ -11,7 +11,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { usePatchInspectionHeader, type Inspection } from "@/lib/queries/inspections";
 
-/** Visible uniquement pour le module bâtiment (schema.module === "vertical"). */
 export function InspectionHeaderFields({
   inspection,
   disabled,

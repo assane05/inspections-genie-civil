@@ -27,7 +27,6 @@ const STATUS_LABELS: Record<string, string> = {
   rejete: "Rejetée",
 };
 
-/** jsPDF.addImage attend une data URL (ou binaire), pas une URL serveur : on convertit ici. */
 async function toDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, { credentials: "include" });
@@ -44,11 +43,6 @@ async function toDataUrl(url: string): Promise<string | null> {
   }
 }
 
-/**
- * Le rapport liste les défauts (minor/major), pas la totalité des constats
- * RAS/non-inspectés — cohérent avec le comportement de pdf-export.ts
- * ("Aucun défaut relevé" quand la liste est vide).
- */
 export async function exportInspectionPdf(
   inspection: InspectionWithValues,
   schema: FormTypeSchema,

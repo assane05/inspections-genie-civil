@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiUrl, ApiError } from "@/lib/api-client";
 import { enqueueSubmission } from "@/lib/offline-queue";
 
-// ========= Types (miroir du contrat back — voir schema-bdd v1.1 + routes/inspections.ts) =========
-
 export type FindingState = "non_inspecte" | "ras" | "minor" | "major" | "yes" | "na";
 export type SeverityLevel = "leger" | "moyen" | "eleve";
 
@@ -86,20 +84,18 @@ export const inspectionKeys = {
 };
 
 // ========= GET /api/form-types/:id/schema =========
-// Mis en cache localement par React Query (staleTime long) : c'est le
-// pendant applicatif du cache HTTP (ETag) posé côté serveur pour l'usage
-// hors-ligne.
+
 export function useFormTypeSchema(formTypeId: string | undefined) {
   return useQuery({
     queryKey: inspectionKeys.formTypeSchema(formTypeId ?? ""),
     queryFn: () => api.get<FormTypeSchema>(`/api/form-types/${formTypeId}/schema`),
     enabled: !!formTypeId,
-    staleTime: 60 * 60 * 1000, // 1h — s'aligne sur le Cache-Control serveur
+    staleTime: 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
   });
 }
 
-// ========= GET /api/inspections/:id =========
+// GET /api/inspections/:id
 export function useInspection(inspectionId: string | undefined) {
   return useQuery({
     queryKey: inspectionKeys.detail(inspectionId ?? ""),
@@ -108,10 +104,8 @@ export function useInspection(inspectionId: string | undefined) {
   });
 }
 
-// ========= POST /api/assignments/:assignmentId/inspection =========
-// Idempotent côté serveur : peut être rappelé sans risque (reprise après
-// perte de connexion) — pas besoin de file d'attente hors-ligne ici, on
-// veut la réponse (l'id de l'inspection) pour continuer.
+//  POST /api/assignments/:assignmentId/inspection =========
+
 export function useResumeInspection() {
   return useMutation({
     mutationFn: (assignmentId: string) =>

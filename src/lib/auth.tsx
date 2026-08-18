@@ -21,9 +21,7 @@ const STORAGE_KEY = "las.session";
 
 type StoredSession = {
   user: SessionUser;
-  /** Expiration absolue (ms epoch). */
   expiresAt: number;
-  /** Dernière activité (ms epoch) — sert au time-out d'inactivité. */
   lastActivity: number;
 };
 
@@ -80,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLastLogoutReason(reason);
   }, []);
 
-  // Hydratation + surveillance de l'expiration / inactivité
   useEffect(() => {
     const stored = readSession();
     if (stored) {
@@ -99,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const s = sessionRef.current;
       if (!s) return;
       const now = Date.now();
-      if (now - s.lastActivity < 30_000) return; // limite les écritures
+      if (now - s.lastActivity < 30_000) return;
       s.lastActivity = now;
       writeSession(s);
     };

@@ -39,8 +39,6 @@ export function subscribeQueue(listener: Listener) {
   return () => listeners.delete(listener);
 }
 
-/** --- Brouillons de formulaire (sauvegarde locale immédiate) --- */
-
 export function saveDraft(formId: string, data: unknown) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(DRAFT_PREFIX + formId, JSON.stringify({ data, savedAt: Date.now() }));
@@ -59,7 +57,6 @@ export function clearDraft(formId: string) {
   window.localStorage.removeItem(DRAFT_PREFIX + formId);
 }
 
-/** --- File d'attente de soumissions --- */
 export function enqueueSubmission(
   endpoint: string,
   payload: unknown,

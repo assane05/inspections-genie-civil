@@ -20,7 +20,6 @@ export function InspectionSection({
 }: {
   inspectionId: string;
   section: FormSchemaSection;
-  /** Vide pour le module bâtiment — un seul constat par item dans ce cas. */
   segments: FormSchemaSegment[];
   values: InspectionValue[];
   onValueChange: (input: ValueUpsertInput) => void;

@@ -50,7 +50,6 @@ export type InspectionValueControlProps = {
   itemLabel: string;
   segmentLabel?: string;
   value: InspectionValue | undefined;
-  /** Persiste le changement (PATCH /inspections/:id/values) — un seul constat à la fois. */
   onChange: (patch: {
     state: FindingState;
     severity?: SeverityLevel | null;
@@ -59,12 +58,6 @@ export type InspectionValueControlProps = {
   disabled?: boolean;
 };
 
-/**
- * Une cellule = un constat (item × segment, ou item seul en bâtiment).
- * Un défaut (minor/major) sans sévérité est bloqué à la soumission côté
- * serveur [D-submit] : on affiche donc immédiatement le sélecteur de
- * sévérité dès qu'un état de défaut est choisi, pour éviter l'aller-retour.
- */
 export function InspectionValueControl({
   inspectionId,
   itemLabel,
