@@ -76,24 +76,18 @@ function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-2">
-        <aside className="relative hidden overflow-hidden lg:flex">
-          <img
+        <aside className="relative hidden overflow-hidden lg:flex bg-left-img">
+          {/* <img
             src={loginHero}
             alt="Aerial view of airport runway and taxiway infrastructure"
             className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-transparent" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
-
-          <div className="relative z-10 flex w-full flex-col justify-between p-12">
+          /> */}
+          <div className="relative z-10 flex w-full p-12">
             <div className="flex items-center gap-3">
-              <div className="flex h-20 w-20 items-center justify-center text-primary-foreground">
-                <img src={LogoLas} alt="" />
-                {/* <Plane className="h-5 w-5" strokeWidth={2.5} /> */}
-              </div>
-              <div>
+              <div className="relative z-10 text-center px-12">
                 <div className="font-display text-lg font-semibold tracking-tight text-white drop-shadow-sm">
-                  LAS Inspections
+                  Connectez-vous pour accéder à votre espace personnel et découvrir toutes les
+                  fonctionnalités.
                 </div>
                 {/* <div className="text-xs text-white/80 drop-shadow-sm">
                   {t("Infrastructures Horizontales", "Horizontal Infrastructures")}
@@ -101,10 +95,10 @@ function LoginPage() {
               </div>
             </div>
 
-            <div className="text-xs text-white/80 drop-shadow-sm">
+            {/* <div className="text-xs text-white/80 drop-shadow-sm">
               © {new Date().getFullYear()} LAS ·{" "}
               {t("Tous droits réservés.", "All rights reserved.")}
-            </div>
+            </div> */}
           </div>
         </aside>
 
@@ -137,10 +131,11 @@ function LoginPage() {
 
           <div className="w-full max-w-md">
             <div>
-              <h1 className="font-display text-3xl font-bold tracking-tight">
+              <img src={LogoLas} alt="" className="m-auto" />
+              {/* <h1 className="font-display text-3xl font-bold tracking-tight">
                 {t("Bon Retour", "Welcome back")}
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
+              </h1> */}
+              <p className="mt-2 text-sm text-muted-foreground text-center">
                 {t(
                   "Connectez-vous à votre espace pour continuer.",
                   "Sign in to your workspace to continue.",

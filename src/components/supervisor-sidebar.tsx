@@ -16,6 +16,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { useNavigate } from "@tanstack/react-router";
+import LogoLas from "@/assets/logo_blanc.png";
 
 export function SupervisorSidebar() {
   const { state } = useSidebar();
@@ -43,9 +44,10 @@ export function SupervisorSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link to="/supervisor/tasks" className="flex items-center gap-3 px-2 py-2">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[0_4px_20px_-4px_var(--color-primary)]">
-            <Plane className="h-5 w-5 -rotate-12" />
+        <Link to="/supervisor/tasks" className="flex items-center gap-3 px-1 py-1">
+          <div className="relative flex h-auto w-auto items-center justify-center  text-primary-foreground">
+            {/* <Plane className="h-5 w-5 -rotate-12" /> */}
+            <img src={LogoLas} alt="" />
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
