@@ -27,7 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/lib/i18n";
-import LogoLas from "@/assets/logo.png";
+import LogoLas from "@/assets/logo_blanc.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -110,7 +110,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link to="/dashboard" className="flex items-center gap-3 px-2 py-2">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[0_4px_20px_-4px_var(--color-primary)]">
+          <div className="relative flex h-auto w-auto items-center justify-center text-primary-foreground">
             {/* <Plane className="h-5 w-5 -rotate-12" /> */}
             <img src={LogoLas} alt="" />
           </div>
