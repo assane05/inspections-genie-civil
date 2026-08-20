@@ -65,10 +65,18 @@ export function InspectionForm({
 
   function handleValueChange(input: ValueUpsertInput) {
     patchValues.mutate([input], {
-      onError: () =>
-        toast.error("Enregistrement en attente", {
-          description: "Sera synchronisé automatiquement dès le retour du réseau.",
-        }),
+      onSuccess: (result) => {
+        if (result.queued) {
+          toast("Enregistré hors-ligne", {
+            description: "Sera synchronisé automatiquement dès le retour du réseau.",
+          });
+        }
+      },
+      onError: (err) => {
+        toast.error("Échec de l'enregistrement", {
+          description: err instanceof Error ? err.message : "Réessayez.",
+        });
+      },
     });
   }
 

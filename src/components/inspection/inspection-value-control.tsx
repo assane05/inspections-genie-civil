@@ -89,8 +89,17 @@ export function InspectionValueControl({
       addPhoto.mutate(
         { valueId: value.id, dataUrl },
         {
-          onError: () =>
-            toast.error("Photo illisible", { description: "Réessayez la prise de vue." }),
+          onSuccess: (result) => {
+            if (result.queued) {
+              toast("Photo enregistrée hors-ligne", {
+                description: "Elle sera envoyée automatiquement dès le retour du réseau.",
+              });
+            }
+          },
+          onError: (err) =>
+            toast.error("Échec de l'enregistrement de la photo", {
+              description: err instanceof Error ? err.message : "Réessayez la prise de vue.",
+            }),
         },
       );
     } catch {

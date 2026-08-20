@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, Power, History, RotateCcw, Info } from "lucide-react";
+import { Plus, Trash2, Power, Info, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,17 +14,16 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import type { Role, SessionUser } from "@/lib/auth-api";
 import {
-  listUsers,
-  saveUsers,
-  resetUsers,
-  getUsersVersion,
-  usersCustomized,
-  createUser,
-  deleteUser,
-  SUPERVISOR_GROUPS,
-} from "@/lib/user-directory";
+  useAdminUsers,
+  useAdminGroups,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+  type AdminRole,
+  type AdminUser,
+} from "@/lib/queries/users";
+import { ApiError } from "@/lib/api-client";
 
 export const Route = createFileRoute("/users")({
   component: UsersPage,
@@ -37,91 +35,83 @@ export const Route = createFileRoute("/users")({
   }),
 });
 
-function isSeedAccount(id: string) {
-  return id === "u-admin-1" || /^u-supervisor-\d+$/.test(id);
+const ROLE_LABELS: Record<AdminRole, string> = {
+  superviseur: "Superviseur",
+  administrateur: "Administrateur",
+  approbateur: "Approbateur",
+};
+
+function randomTempPassword(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+function describeError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && err.message) return err.message;
+  return fallback;
 }
 
 function UsersPage() {
   const { user: me } = useAuth();
-  const [users, setUsers] = useState<SessionUser[]>(() => listUsers());
-  const [version, setVersion] = useState(getUsersVersion());
-  const [customized, setCustomized] = useState(usersCustomized());
+  const { data: users = [], isLoading, isError } = useAdminUsers();
+  const { data: groups = [] } = useAdminGroups();
 
-  const persist = (next: SessionUser[]) => {
-    const v = saveUsers(next);
-    setUsers(next);
-    setVersion(v);
-    setCustomized(true);
-  };
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
 
-  const update = (id: string, patch: Partial<SessionUser>) =>
-    persist(users.map((u) => (u.id === id ? { ...u, ...patch } : u)));
-
-  const toggleGroup = (id: string, group: string) =>
-    persist(
-      users.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              groups: u.groups.includes(group)
-                ? u.groups.filter((g) => g !== group)
-                : [...u.groups, group],
-            }
-          : u,
-      ),
+  const toggleGroup = (u: AdminUser, groupId: string) => {
+    const groupIds = u.groups.some((g) => g.id === groupId)
+      ? u.groups.filter((g) => g.id !== groupId).map((g) => g.id)
+      : [...u.groups.map((g) => g.id), groupId];
+    updateUser.mutate(
+      { id: u.id, groupIds },
+      {
+        onError: (err) =>
+          toast.error("Échec de la mise à jour", { description: describeError(err, "Réessayez.") }),
+      },
     );
-
-  const toggleActive = (u: SessionUser) => {
-    if (u.id === me?.id && u.isActive) {
-      toast.error("Action impossible", {
-        description: "Vous ne pouvez pas désactiver votre propre compte.",
-      });
-      return;
-    }
-    update(u.id, { isActive: !u.isActive });
-    toast.success(u.isActive ? `${u.name} désactivé` : `${u.name} réactivé`);
   };
 
-  const remove = (u: SessionUser) => {
-    if (isSeedAccount(u.id)) {
-      toast.error("Suppression impossible", {
-        description:
-          "Ce compte fait partie du jeu de données de démonstration — désactivez-le plutôt.",
-      });
-      return;
-    }
-    const next = listUsers().filter((x) => x.id !== u.id);
-    const v = saveUsers(next);
-    setUsers(next);
-    setVersion(v);
-    setCustomized(true);
-    toast.success("Utilisateur supprimé");
+  const toggleActive = (u: AdminUser) => {
+    updateUser.mutate(
+      { id: u.id, isActive: !u.isActive },
+      {
+        onSuccess: () =>
+          toast.success(u.isActive ? `${u.displayName} désactivé` : `${u.displayName} réactivé`),
+        onError: (err) =>
+          toast.error("Action impossible", { description: describeError(err, "Réessayez.") }),
+      },
+    );
+  };
+
+  const remove = (u: AdminUser) => {
+    deleteUser.mutate(u.id, {
+      onSuccess: () => toast.success("Utilisateur supprimé"),
+      onError: (err) =>
+        toast.error("Suppression impossible", { description: describeError(err, "Réessayez.") }),
+    });
   };
 
   const addUser = () => {
-    const created = createUser({
-      name: "Nouvel utilisateur",
-      username: `user${Date.now().toString().slice(-5)}`,
-      email: "",
-      role: "supervisor",
-      groups: [],
-      isActive: true,
-    });
-    setUsers(listUsers());
-    setVersion(getUsersVersion());
-    setCustomized(true);
-    toast.success("Utilisateur créé", {
-      description: `Complétez le profil de ${created.username}.`,
-    });
+    const password = randomTempPassword();
+    const username = `user${Date.now().toString().slice(-6)}`;
+    createUser.mutate(
+      { username, displayName: "Nouvel utilisateur", role: "superviseur", password, groupIds: [] },
+      {
+        onSuccess: () =>
+          toast.success("Utilisateur créé", {
+            description: `Identifiant : ${username} · Mot de passe temporaire : ${password} (à transmettre et faire changer).`,
+          }),
+        onError: (err) =>
+          toast.error("Création impossible", { description: describeError(err, "Réessayez.") }),
+      },
+    );
   };
 
-  const reset = () => {
-    const v = resetUsers();
-    setUsers(listUsers());
-    setVersion(v);
-    setCustomized(false);
-    toast.success("Annuaire réinitialisé aux valeurs par défaut");
-  };
+  const update = (
+    u: AdminUser,
+    patch: Partial<Pick<AdminUser, "displayName" | "username" | "email">>,
+  ) => updateUser.mutate({ id: u.id, ...patch });
 
   return (
     <div className="pb-10">
@@ -134,6 +124,7 @@ function UsersPage() {
             size="sm"
             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={addUser}
+            disabled={createUser.isPending}
           >
             <Plus className="h-4 w-4" /> Nouvel utilisateur
           </Button>
@@ -143,20 +134,21 @@ function UsersPage() {
       <div className="p-6 md:p-8">
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          Aucun mot de passe n'est géré ici (voir auth-api.ts) — la vérification des identifiants se
-          fait côté backend une fois branché. Un compte désactivé ne peut plus se connecter.
+          Un mot de passe temporaire est généré à la création — communiquez-le à l'utilisateur et
+          faites-le changer dès la première connexion. Un compte désactivé ne peut plus se
+          connecter.
         </div>
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/40 p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <History className="h-3.5 w-3.5" />
-            Version {version}
-            {customized ? " · personnalisé" : " · valeurs par défaut"}
+        {isLoading && (
+          <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Chargement des utilisateurs…
           </div>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={reset}>
-            <RotateCcw className="h-3.5 w-3.5" /> Réinitialiser
-          </Button>
-        </div>
+        )}
+        {isError && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            Impossible de charger les utilisateurs.
+          </div>
+        )}
 
         <div className="space-y-3">
           {users.map((u) => (
@@ -175,8 +167,10 @@ function UsersPage() {
                     Nom
                   </Label>
                   <Input
-                    value={u.name}
-                    onChange={(e) => update(u.id, { name: e.target.value })}
+                    defaultValue={u.displayName}
+                    onBlur={(e) =>
+                      e.target.value !== u.displayName && update(u, { displayName: e.target.value })
+                    }
                     className="h-9 bg-background/60"
                   />
                 </div>
@@ -185,8 +179,10 @@ function UsersPage() {
                     Identifiant
                   </Label>
                   <Input
-                    value={u.username}
-                    onChange={(e) => update(u.id, { username: e.target.value })}
+                    defaultValue={u.username}
+                    onBlur={(e) =>
+                      e.target.value !== u.username && update(u, { username: e.target.value })
+                    }
                     className="h-9 bg-background/60"
                   />
                 </div>
@@ -195,8 +191,11 @@ function UsersPage() {
                     Email
                   </Label>
                   <Input
-                    value={u.email}
-                    onChange={(e) => update(u.id, { email: e.target.value })}
+                    defaultValue={u.email ?? ""}
+                    onBlur={(e) =>
+                      e.target.value !== (u.email ?? "") &&
+                      update(u, { email: e.target.value || null })
+                    }
                     className="h-9 bg-background/60"
                   />
                 </div>
@@ -204,13 +203,29 @@ function UsersPage() {
                   <Label className="mb-1 block text-[11px] uppercase tracking-wider text-muted-foreground">
                     Rôle
                   </Label>
-                  <Select value={u.role} onValueChange={(v) => update(u.id, { role: v as Role })}>
+                  <Select
+                    value={u.role}
+                    onValueChange={(v) =>
+                      updateUser.mutate(
+                        { id: u.id, role: v as AdminRole },
+                        {
+                          onError: (err) =>
+                            toast.error("Changement de rôle impossible", {
+                              description: describeError(err, "Réessayez."),
+                            }),
+                        },
+                      )
+                    }
+                  >
                     <SelectTrigger className="h-9 bg-background/60">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="supervisor">Superviseur</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      {(Object.keys(ROLE_LABELS) as AdminRole[]).map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,6 +239,7 @@ function UsersPage() {
                         ? "text-warning hover:bg-warning/10"
                         : "text-primary hover:bg-primary/10",
                     )}
+                    disabled={u.id === me?.id && u.isActive}
                     onClick={() => toggleActive(u)}
                   >
                     <Power className="h-3.5 w-3.5" /> {u.isActive ? "Désactiver" : "Réactiver"}
@@ -232,6 +248,7 @@ function UsersPage() {
                     size="sm"
                     variant="ghost"
                     className="gap-1.5 text-destructive hover:bg-destructive/10"
+                    disabled={u.id === me?.id}
                     onClick={() => remove(u)}
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Supprimer
@@ -243,36 +260,27 @@ function UsersPage() {
                     Groupes ({u.groups.length})
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {SUPERVISOR_GROUPS.map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => toggleGroup(u.id, g)}
-                        className={cn(
-                          "rounded-lg border px-2.5 py-1 text-xs transition-colors",
-                          u.groups.includes(g)
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border/60 bg-background/60 text-muted-foreground",
-                        )}
-                      >
-                        {g}
-                      </button>
-                    ))}
+                    {groups.map((g) => {
+                      const active = u.groups.some((ug) => ug.id === g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => toggleGroup(u, g.id)}
+                          className={cn(
+                            "rounded-lg border px-2.5 py-1 text-xs transition-colors",
+                            active
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border/60 bg-background/60 text-muted-foreground",
+                          )}
+                        >
+                          {g.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-
-              {!u.isActive && (
-                <p className="mt-2 text-[11px] font-medium text-destructive">
-                  Compte désactivé — ne peut plus se connecter.
-                </p>
-              )}
-              {isSeedAccount(u.id) && (
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Info className="h-3 w-3" /> Compte de démonstration — les modifications sont
-                  enregistrées comme pour tout compte.
-                </p>
-              )}
             </div>
           ))}
         </div>

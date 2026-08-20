@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiUrl, ApiError } from "@/lib/api-client";
 import { enqueueSubmission } from "@/lib/offline-queue";
 
+// ========= Types (miroir du contrat back — voir schema-bdd v1.1 + routes/inspections.ts) =========
+
 export type FindingState = "non_inspecte" | "ras" | "minor" | "major" | "yes" | "na";
 export type SeverityLevel = "leger" | "moyen" | "eleve";
 
@@ -84,18 +86,20 @@ export const inspectionKeys = {
 };
 
 // ========= GET /api/form-types/:id/schema =========
-
+// Mis en cache localement par React Query (staleTime long) : c'est le
+// pendant applicatif du cache HTTP (ETag) posé côté serveur pour l'usage
+// hors-ligne.
 export function useFormTypeSchema(formTypeId: string | undefined) {
   return useQuery({
     queryKey: inspectionKeys.formTypeSchema(formTypeId ?? ""),
     queryFn: () => api.get<FormTypeSchema>(`/api/form-types/${formTypeId}/schema`),
     enabled: !!formTypeId,
-    staleTime: 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1h — s'aligne sur le Cache-Control serveur
     gcTime: 24 * 60 * 60 * 1000,
   });
 }
 
-// GET /api/inspections/:id
+// ========= GET /api/inspections/:id =========
 export function useInspection(inspectionId: string | undefined) {
   return useQuery({
     queryKey: inspectionKeys.detail(inspectionId ?? ""),
@@ -104,8 +108,10 @@ export function useInspection(inspectionId: string | undefined) {
   });
 }
 
-//  POST /api/assignments/:assignmentId/inspection =========
-
+// ========= POST /api/assignments/:assignmentId/inspection =========
+// Idempotent côté serveur : peut être rappelé sans risque (reprise après
+// perte de connexion) — pas besoin de file d'attente hors-ligne ici, on
+// veut la réponse (l'id de l'inspection) pour continuer.
 export function useResumeInspection() {
   return useMutation({
     mutationFn: (assignmentId: string) =>
@@ -125,19 +131,32 @@ export type ValueUpsertInput = {
   comment?: string | null;
 };
 
+/**
+ * Upsert par lot. En ligne : PATCH direct. Hors-ligne (ou échec réseau) :
+ * mise en file (méthode PATCH) rejouée automatiquement à la reconnexion —
+ * sûr grâce à l'idempotence garantie côté serveur (ON CONFLICT). Le champ
+ * `queued` du résultat distingue "persisté tout de suite" de "en attente
+ * de synchronisation", pour que l'appelant affiche le bon retour utilisateur.
+ */
 export function usePatchInspectionValues(inspectionId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: ValueUpsertInput[]) => {
+    mutationFn: async (
+      values: ValueUpsertInput[],
+    ): Promise<{ values: InspectionValue[]; queued: boolean }> => {
       try {
-        return await api.patch<{ values: InspectionValue[] }>(
+        const res = await api.patch<{ values: InspectionValue[] }>(
           `/api/inspections/${inspectionId}/values`,
           { values },
         );
+        return { ...res, queued: false };
       } catch (err) {
-        if (err instanceof ApiError) throw err;
+        if (err instanceof ApiError) throw err; // erreur métier (422/403...) : ne pas mettre en file
+        // Échec réseau (hors-ligne) : enqueueSubmission peut elle-même lever
+        // (quota localStorage dépassé) — dans ce cas on laisse remonter,
+        // il n'y a rien de sûr à faire d'autre que prévenir l'utilisateur.
         enqueueSubmission(apiUrl(`/api/inspections/${inspectionId}/values`), { values }, "PATCH");
-        return { values: [] as InspectionValue[] };
+        return { values: [], queued: true };
       }
     },
     onSuccess: () => {
@@ -195,13 +214,35 @@ export function usePatchInspectionHeader(inspectionId: string) {
 // ========= POST /api/inspections/:id/values/:valueId/photos =========
 // ========= DELETE /api/inspections/:id/values/:valueId/photos/:photoId =========
 
+/**
+ * Ajout d'une photo. En ligne : upload direct (déjà compressée par
+ * compressImage avant l'appel, cf. InspectionValueControl). Hors-ligne (ou
+ * échec réseau) : mise en file, réessayée automatiquement à la
+ * reconnexion — le data URL compressé est retiré du localStorage dès que
+ * l'upload est confirmé (flushQueue), jamais conservé indéfiniment.
+ * Idempotent côté serveur via idempotencyKey (généré par la file) : un
+ * rejeu après coupure réseau ambiguë ne crée pas de doublon.
+ */
 export function useAddValuePhoto(inspectionId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ valueId, dataUrl }: { valueId: string; dataUrl: string }) =>
-      api.post<InspectionPhoto>(`/api/inspections/${inspectionId}/values/${valueId}/photos`, {
-        dataUrl,
-      }),
+    mutationFn: async ({
+      valueId,
+      dataUrl,
+    }: {
+      valueId: string;
+      dataUrl: string;
+    }): Promise<{ photo: InspectionPhoto | null; queued: boolean }> => {
+      const endpoint = `/api/inspections/${inspectionId}/values/${valueId}/photos`;
+      try {
+        const photo = await api.post<InspectionPhoto>(endpoint, { dataUrl });
+        return { photo, queued: false };
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+        enqueueSubmission(apiUrl(endpoint), { dataUrl }, "POST");
+        return { photo: null, queued: true };
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inspectionKeys.detail(inspectionId) });
     },
