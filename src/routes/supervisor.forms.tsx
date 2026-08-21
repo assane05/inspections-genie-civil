@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useI18n } from "@/lib/i18n";
 import { availableForms } from "@/lib/mock-data";
-import { useTasks } from "@/lib/queries/tasks";
 import { progressByForm } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { useAssignments } from "@/lib/queries/assignments";
 
 export const Route = createFileRoute("/supervisor/forms")({
   component: SupervisorForms,
@@ -25,7 +25,7 @@ function SupervisorForms() {
 
   // Progression "X of Y" par formulaire (sprint 13) — même source que la liste des
   // tâches et le tableau de bord, pour un compteur exact et cohérent partout.
-  const { data: rows = [] } = useTasks();
+  const { data: rows = [] } = useAssignments();
   const progress = useMemo(() => new Map(progressByForm(rows).map((p) => [p.form, p])), [rows]);
 
   return (

@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTasks } from "@/lib/queries/tasks";
+import { useAssignments } from "@/lib/queries/assignments";
 import {
   applyFilters,
   emptyFilters,
@@ -44,7 +44,7 @@ function SupervisorDashboard() {
 
   // Même source et même fonction de filtrage que la liste des tâches (sprint 11) et le
   // compteur "X of Y" par formulaire (sprint 13) — garantit des chiffres cohérents partout.
-  const { data: scoped = [] } = useTasks();
+  const { data: scoped = [] } = useAssignments();
   const filtered = useMemo(() => applyFilters(scoped, filters), [scoped, filters]);
 
   const forms = useMemo(() => [...new Set(scoped.map((r) => r.form))].sort(), [scoped]);

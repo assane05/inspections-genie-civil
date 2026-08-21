@@ -24,6 +24,8 @@ import { useI18n } from "@/lib/i18n";
 import { useDeleteTask, useTasks } from "@/lib/queries/tasks";
 import { applyFilters, emptyFilters, type TaskFilters } from "@/lib/tasks";
 import { StatusBadge } from "@/routes/dashboard";
+import { useAssignments, useDeleteAssignment } from "@/lib/queries/assignments";
+import { ApiError } from "@/lib/api-client";
 
 export const Route = createFileRoute("/tasks")({
   component: TasksPage,
@@ -43,18 +45,35 @@ function TasksPage() {
 
   // Même TaskFilters/applyFilters que la liste superviseur et le tableau de bord —
   // garantit des filtres cohérents partout (cf. AC "Assignation des tâches").
-  const { data: all = [], isLoading, isError } = useTasks();
+
+  const { data: all = [], isLoading, isError } = useAssignments();
   const forms = useMemo(() => [...new Set(all.map((t) => t.form))].sort(), [all]);
   const groups = useMemo(() => [...new Set(all.map((t) => t.group))].sort(), [all]);
   const filtered = useMemo(() => applyFilters(all, filters), [all, filters]);
 
-  const deleteTask = useDeleteTask();
+  const deleteAssignment = useDeleteAssignment();
   const handleDelete = (id: string) => {
-    deleteTask.mutate(id, {
+    deleteAssignment.mutate(id, {
       onSuccess: () => toast.success("Tâche supprimée"),
-      onError: () => toast.error("Suppression impossible", { description: "Réessayez." }),
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 409) {
+          toast.error("Suppression impossible", {
+            description: "Une inspection existe déjà pour cette tâche.",
+          });
+          return;
+        }
+        toast.error("Suppression impossible", { description: "Réessayez." });
+      },
     });
   };
+
+  // const deleteTask = useDeleteTask();
+  // const handleDelete = (id: string) => {
+  //   deleteTask.mutate(id, {
+  //     onSuccess: () => toast.success("Tâche supprimée"),
+  //     onError: () => toast.error("Suppression impossible", { description: "Réessayez." }),
+  //   });
+  // };
 
   return (
     <div className="pb-10">
@@ -199,7 +218,7 @@ function TasksPage() {
                         size="sm"
                         variant="ghost"
                         className="h-8 gap-1 text-destructive hover:bg-destructive/10"
-                        disabled={deleteTask.isPending}
+                        disabled={deleteAssignment.isPending}
                         onClick={() => handleDelete(r.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> {t("action.delete")}

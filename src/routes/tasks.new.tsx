@@ -17,11 +17,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { useDictionary } from "@/lib/queries/dictionary";
-import type { FicheType } from "@/lib/fiche-catalog";
-import { SUPERVISOR_GROUPS } from "@/lib/auth-api";
+import { useAdminGroups } from "@/lib/queries/users";
+import { useAssignments, useCreateAssignments, useFormTypesList } from "@/lib/queries/assignments";
 import { isoWeek } from "@/lib/mock-data";
-import { useCreateTasks, useTasks } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks/new")({
@@ -34,46 +32,41 @@ export const Route = createFileRoute("/tasks/new")({
   }),
 });
 
-const BUILDING_FORM = "Fiche d'inspection Bâtiment";
-
-function buildFormGroups(catalog: FicheType[]): { group: string; forms: string[] }[] {
-  return [
-    ...Object.entries(
-      catalog.reduce<Record<string, string[]>>((acc, f) => {
-        (acc[f.group] ??= []).push(f.label);
-        return acc;
-      }, {}),
-    ).map(([group, forms]) => ({ group, forms })),
-    { group: "Bâtiment", forms: [BUILDING_FORM] },
-  ];
-}
-
 function NewTask() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  // Catalogue de fiches (API) — reflète immédiatement les éditions admin, sans redéploiement.
-  const { data: catalogRes, isLoading: catalogLoading } =
-    useDictionary<FicheType[]>("fiche-catalog");
-  const FORM_GROUPS = useMemo(() => buildFormGroups(catalogRes?.data ?? []), [catalogRes]);
 
-  const [form, setForm] = useState<string>("");
+  const { data: formTypes = [], isLoading: formTypesLoading } = useFormTypesList();
+  const formGroups = useMemo(
+    () => [
+      { label: "Horizontal", items: formTypes.filter((f) => f.module === "horizontal") },
+      { label: "Bâtiment", items: formTypes.filter((f) => f.module === "vertical") },
+    ],
+    [formTypes],
+  );
+
+  const { data: adminGroups = [] } = useAdminGroups();
+  const { data: allTasks = [] } = useAssignments();
+  const createAssignments = useCreateAssignments();
+
+  const [formTypeId, setFormTypeId] = useState<string>("");
   const [zones, setZones] = useState<string[]>([]);
   const [zoneInput, setZoneInput] = useState("");
-  const [groups, setGroups] = useState<string[]>([]);
+  const [groupIds, setGroupIds] = useState<string[]>([]);
   const [dueISO, setDueISO] = useState("");
   const [notes, setNotes] = useState("");
   const [comment, setComment] = useState("");
 
-  const { data: allTasks = [] } = useTasks();
-  const createTasks = useCreateTasks();
+  const selectedFormName = formTypes.find((f) => f.id === formTypeId)?.name;
 
-  // Suggestions de zones déjà utilisées pour ce formulaire (mock + tâches créées par l'admin) —
-  // évite de ressaisir "Runway 05/23" à la main à chaque fois, tout en restant libre (sprint
-  // "Assignation des tâches").
+  // Suggestions de zones déjà utilisées pour cette fiche — évite de ressaisir
+  // "Runway 05/23" à la main à chaque fois, tout en restant libre.
   const zoneSuggestions = useMemo(() => {
-    if (!form) return [];
-    return [...new Set(allTasks.filter((t) => t.form === form).map((t) => t.zone))].sort();
-  }, [form, allTasks]);
+    if (!selectedFormName) return [];
+    return [...new Set(allTasks.filter((tk) => tk.form === selectedFormName).map((tk) => tk.zone))]
+      .filter(Boolean)
+      .sort();
+  }, [selectedFormName, allTasks]);
 
   const toggleZone = (z: string) =>
     setZones((zs) => (zs.includes(z) ? zs.filter((x) => x !== z) : [...zs, z]));
@@ -85,8 +78,8 @@ function NewTask() {
     setZoneInput("");
   };
 
-  const toggleGroup = (g: string) =>
-    setGroups((gs) => (gs.includes(g) ? gs.filter((x) => x !== g) : [...gs, g]));
+  const toggleGroup = (id: string) =>
+    setGroupIds((gs) => (gs.includes(id) ? gs.filter((x) => x !== id) : [...gs, id]));
 
   const preview = useMemo(() => {
     if (!dueISO) return null;
@@ -99,7 +92,7 @@ function NewTask() {
   }, [dueISO]);
 
   const submit = () => {
-    if (!form) {
+    if (!formTypeId) {
       toast.error("Formulaire manquant", { description: "Choisissez une fiche d'inspection." });
       return;
     }
@@ -109,7 +102,7 @@ function NewTask() {
       });
       return;
     }
-    if (!groups.length) {
+    if (!groupIds.length) {
       toast.error("Groupe manquant", {
         description: "Assignez au moins un groupe de supervision.",
       });
@@ -119,19 +112,15 @@ function NewTask() {
       toast.error("Date limite manquante", { description: "Renseignez une date limite." });
       return;
     }
-    createTasks.mutate(
-      {
-        form,
-        zones,
-        groups,
-        notes,
-        dueISO,
-        kind: form === BUILDING_FORM ? "batiment" : "horizontal",
-      },
+
+    const combinedNotes = [notes, comment].filter(Boolean).join(" · ") || undefined;
+
+    createAssignments.mutate(
+      { formTypeId, zones, groupIds, dueISO, notes: combinedNotes },
       {
         onSuccess: (created) => {
           toast.success(`${created.length} tâche(s) créée(s)`, {
-            description: `${zones.length} zone(s) × ${groups.length} groupe(s) — échéance ${new Date(dueISO + "T00:00:00").toLocaleDateString("fr-FR")}.`,
+            description: `${zones.length} zone(s) × ${groupIds.length} groupe(s) — échéance ${new Date(dueISO + "T00:00:00").toLocaleDateString("fr-FR")}.`,
           });
           navigate({ to: "/tasks" });
         },
@@ -157,9 +146,9 @@ function NewTask() {
                 Formulaire d'inspection
               </Label>
               <Select
-                value={form}
+                value={formTypeId}
                 onValueChange={(v) => {
-                  setForm(v);
+                  setFormTypeId(v);
                   setZones([]);
                 }}
               >
@@ -167,16 +156,19 @@ function NewTask() {
                   <SelectValue placeholder="Choisir un formulaire" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FORM_GROUPS.map((g) => (
-                    <SelectGroup key={g.group}>
-                      <SelectLabel>{g.group}</SelectLabel>
-                      {g.forms.map((f) => (
-                        <SelectItem key={f} value={f}>
-                          {f}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
+                  {formGroups.map(
+                    (g) =>
+                      g.items.length > 0 && (
+                        <SelectGroup key={g.label}>
+                          <SelectLabel>{g.label}</SelectLabel>
+                          {g.items.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -231,9 +223,7 @@ function NewTask() {
                       addCustomZone();
                     }
                   }}
-                  placeholder={
-                    form === BUILDING_FORM ? "Ex. Terminal 2" : "Ajouter une zone (Entrée)"
-                  }
+                  placeholder="Ajouter une zone (Entrée)"
                   className="h-10 bg-background/60"
                 />
                 <Button
@@ -268,22 +258,22 @@ function NewTask() {
 
             <div className="md:col-span-2">
               <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
-                Groupes assignés ({groups.length})
+                Groupes assignés ({groupIds.length})
               </Label>
               <div className="flex flex-wrap gap-2">
-                {SUPERVISOR_GROUPS.map((g) => (
+                {adminGroups.map((g) => (
                   <button
-                    key={g}
+                    key={g.id}
                     type="button"
-                    onClick={() => toggleGroup(g)}
+                    onClick={() => toggleGroup(g.id)}
                     className={cn(
                       "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                      groups.includes(g)
+                      groupIds.includes(g.id)
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border/60 bg-background/60 text-muted-foreground hover:border-primary/40",
                     )}
                   >
-                    {g}
+                    {g.name}
                   </button>
                 ))}
               </div>
@@ -316,18 +306,18 @@ function NewTask() {
 
           <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-5">
             <span className="text-xs text-muted-foreground">
-              {zones.length > 0 && groups.length > 0
-                ? `${zones.length * groups.length} tâche(s) seront créées (${zones.length} zone(s) × ${groups.length} groupe(s))`
+              {zones.length > 0 && groupIds.length > 0
+                ? `${zones.length * groupIds.length} tâche(s) seront créées (${zones.length} zone(s) × ${groupIds.length} groupe(s))`
                 : "Choisissez au moins une zone et un groupe"}
             </span>
             <Button
               size="sm"
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_20px_-4px_var(--color-primary)]"
               onClick={submit}
-              disabled={createTasks.isPending || catalogLoading}
+              disabled={createAssignments.isPending || formTypesLoading}
             >
               <Check className="h-4 w-4" />
-              {createTasks.isPending ? "Création…" : "Créer et assigner"}
+              {createAssignments.isPending ? "Création…" : "Créer et assigner"}
             </Button>
           </div>
         </div>
