@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   const ops = [
     { title: t("nav.tasks"), url: "/tasks", icon: ListChecks },
-    { title: t("nav.new_task"), url: "/tasks/new", icon: ClipboardCheck },
+    { title: t("nav.new_task"), url: "/tasks_new", icon: ClipboardCheck },
     { title: t("nav.planning"), url: "/planning", icon: CalendarDays },
   ];
 

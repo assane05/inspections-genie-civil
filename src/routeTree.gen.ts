@@ -19,6 +19,7 @@ import { Route as ModelsRouteImport } from './routes/models'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as SupervisorRouteImport } from './routes/supervisor'
 import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as Tasks_newRouteImport } from './routes/tasks_new'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as FormsAvailableRouteImport } from './routes/forms.available'
 import { Route as SupervisorIndexRouteImport } from './routes/supervisor.index'
@@ -26,7 +27,6 @@ import { Route as SupervisorDashboardRouteImport } from './routes/supervisor.das
 import { Route as SupervisorFormsRouteImport } from './routes/supervisor.forms'
 import { Route as SupervisorGalleryRouteImport } from './routes/supervisor.gallery'
 import { Route as SupervisorTasksRouteImport } from './routes/supervisor.tasks'
-import { Route as TasksNewRouteImport } from './routes/tasks.new'
 import { Route as SupervisorBuildingTaskIdRouteImport } from './routes/supervisor.building.$taskId'
 import { Route as SupervisorTaskTaskIdRouteImport } from './routes/supervisor.task.$taskId'
 
@@ -80,6 +80,11 @@ const TasksRoute = TasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Tasks_newRoute = Tasks_newRouteImport.update({
+  id: '/tasks_new',
+  path: '/tasks_new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -115,11 +120,6 @@ const SupervisorTasksRoute = SupervisorTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => SupervisorRoute,
 } as any)
-const TasksNewRoute = TasksNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => TasksRoute,
-} as any)
 const SupervisorBuildingTaskIdRoute =
   SupervisorBuildingTaskIdRouteImport.update({
     id: '/building/$taskId',
@@ -142,14 +142,14 @@ export interface FileRoutesByFullPath {
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
-  '/tasks': typeof TasksRouteWithChildren
+  '/tasks': typeof TasksRoute
+  '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
-  '/tasks/new': typeof TasksNewRoute
   '/supervisor/': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
   '/supervisor/task/$taskId': typeof SupervisorTaskTaskIdRoute
@@ -163,14 +163,14 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
-  '/tasks': typeof TasksRouteWithChildren
+  '/tasks': typeof TasksRoute
+  '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
-  '/tasks/new': typeof TasksNewRoute
   '/supervisor': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
   '/supervisor/task/$taskId': typeof SupervisorTaskTaskIdRoute
@@ -186,14 +186,14 @@ export interface FileRoutesById {
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
-  '/tasks': typeof TasksRouteWithChildren
+  '/tasks': typeof TasksRoute
+  '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
-  '/tasks/new': typeof TasksNewRoute
   '/supervisor/': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
   '/supervisor/task/$taskId': typeof SupervisorTaskTaskIdRoute
@@ -211,13 +211,13 @@ export interface FileRouteTypes {
     | '/planning'
     | '/supervisor'
     | '/tasks'
+    | '/tasks_new'
     | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
     | '/supervisor/tasks'
-    | '/tasks/new'
     | '/supervisor/'
     | '/supervisor/building/$taskId'
     | '/supervisor/task/$taskId'
@@ -232,13 +232,13 @@ export interface FileRouteTypes {
     | '/models'
     | '/planning'
     | '/tasks'
+    | '/tasks_new'
     | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
     | '/supervisor/tasks'
-    | '/tasks/new'
     | '/supervisor'
     | '/supervisor/building/$taskId'
     | '/supervisor/task/$taskId'
@@ -254,13 +254,13 @@ export interface FileRouteTypes {
     | '/planning'
     | '/supervisor'
     | '/tasks'
+    | '/tasks_new'
     | '/users'
     | '/forms/available'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
     | '/supervisor/tasks'
-    | '/tasks/new'
     | '/supervisor/'
     | '/supervisor/building/$taskId'
     | '/supervisor/task/$taskId'
@@ -276,7 +276,8 @@ export interface RootRouteChildren {
   ModelsRoute: typeof ModelsRoute
   PlanningRoute: typeof PlanningRoute
   SupervisorRoute: typeof SupervisorRouteWithChildren
-  TasksRoute: typeof TasksRouteWithChildren
+  TasksRoute: typeof TasksRoute
+  Tasks_newRoute: typeof Tasks_newRoute
   UsersRoute: typeof UsersRoute
 }
 
@@ -352,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TasksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks_new': {
+      id: '/tasks_new'
+      path: '/tasks_new'
+      fullPath: '/tasks_new'
+      preLoaderRoute: typeof Tasks_newRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -400,13 +408,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/supervisor/tasks'
       preLoaderRoute: typeof SupervisorTasksRouteImport
       parentRoute: typeof SupervisorRoute
-    }
-    '/tasks/new': {
-      id: '/tasks/new'
-      path: '/new'
-      fullPath: '/tasks/new'
-      preLoaderRoute: typeof TasksNewRouteImport
-      parentRoute: typeof TasksRoute
     }
     '/supervisor/building/$taskId': {
       id: '/supervisor/building/$taskId'
@@ -459,16 +460,6 @@ const SupervisorRouteWithChildren = SupervisorRoute._addFileChildren(
   SupervisorRouteChildren,
 )
 
-interface TasksRouteChildren {
-  TasksNewRoute: typeof TasksNewRoute
-}
-
-const TasksRouteChildren: TasksRouteChildren = {
-  TasksNewRoute: TasksNewRoute,
-}
-
-const TasksRouteWithChildren = TasksRoute._addFileChildren(TasksRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
@@ -479,7 +470,8 @@ const rootRouteChildren: RootRouteChildren = {
   ModelsRoute: ModelsRoute,
   PlanningRoute: PlanningRoute,
   SupervisorRoute: SupervisorRouteWithChildren,
-  TasksRoute: TasksRouteWithChildren,
+  TasksRoute: TasksRoute,
+  Tasks_newRoute: Tasks_newRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport

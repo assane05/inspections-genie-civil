@@ -1,9 +1,18 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, Power, Info, Loader2 } from "lucide-react";
+import { Plus, Trash2, Power, Info, Loader2, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -92,21 +101,7 @@ function UsersPage() {
     });
   };
 
-  const addUser = () => {
-    const password = randomTempPassword();
-    const username = `user${Date.now().toString().slice(-6)}`;
-    createUser.mutate(
-      { username, displayName: "Nouvel utilisateur", role: "superviseur", password, groupIds: [] },
-      {
-        onSuccess: () =>
-          toast.success("Utilisateur créé", {
-            description: `Identifiant : ${username} · Mot de passe temporaire : ${password} (à transmettre et faire changer).`,
-          }),
-        onError: (err) =>
-          toast.error("Création impossible", { description: describeError(err, "Réessayez.") }),
-      },
-    );
-  };
+  const [createOpen, setCreateOpen] = useState(false);
 
   const update = (
     u: AdminUser,
@@ -123,8 +118,7 @@ function UsersPage() {
           <Button
             size="sm"
             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={addUser}
-            disabled={createUser.isPending}
+            onClick={() => setCreateOpen(true)}
           >
             <Plus className="h-4 w-4" /> Nouvel utilisateur
           </Button>
@@ -285,6 +279,191 @@ function UsersPage() {
           ))}
         </div>
       </div>
+
+      <CreateUserDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        groups={groups}
+        createUser={createUser}
+      />
     </div>
+  );
+}
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  groups,
+  createUser,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groups: { id: string; name: string }[];
+  createUser: ReturnType<typeof useCreateUser>;
+}) {
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<AdminRole>("superviseur");
+  const [password, setPassword] = useState(randomTempPassword());
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+
+  const reset = () => {
+    setUsername("");
+    setDisplayName("");
+    setEmail("");
+    setRole("superviseur");
+    setPassword(randomTempPassword());
+    setGroupIds([]);
+  };
+
+  const toggleGroup = (id: string) =>
+    setGroupIds((gs) => (gs.includes(id) ? gs.filter((x) => x !== id) : [...gs, id]));
+
+  const canSubmit =
+    username.trim().length >= 3 && displayName.trim().length > 0 && password.length >= 8;
+
+  const submit = () => {
+    createUser.mutate(
+      {
+        username: username.trim(),
+        displayName: displayName.trim(),
+        email: email.trim() || null,
+        role,
+        password,
+        groupIds,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Utilisateur créé", {
+            description: `Identifiant : ${username.trim()} · Mot de passe temporaire : ${password} (à transmettre et faire changer).`,
+          });
+          onOpenChange(false);
+          reset();
+        },
+        onError: (err) =>
+          toast.error("Création impossible", { description: describeError(err, "Réessayez.") }),
+      },
+    );
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) reset();
+      }}
+    >
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Nouvel utilisateur</DialogTitle>
+          <DialogDescription>
+            Un mot de passe temporaire est proposé — communiquez-le et faites-le changer dès la
+            première connexion.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Identifiant
+            </Label>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="jdupont"
+              autoFocus
+            />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Nom complet
+            </Label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Jean Dupont"
+            />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Email (optionnel)
+            </Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jean.dupont@las.local"
+            />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Rôle
+            </Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AdminRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ROLE_LABELS) as AdminRole[]).map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Mot de passe temporaire
+            </Label>
+            <div className="flex gap-2">
+              <Input value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setPassword(randomTempPassword())}
+                aria-label="Regénérer un mot de passe"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
+              Groupes ({groupIds.length})
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              {groups.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => toggleGroup(g.id)}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-1 text-xs transition-colors",
+                    groupIds.includes(g.id)
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border/60 bg-background/60 text-muted-foreground",
+                  )}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button disabled={!canSubmit || createUser.isPending} onClick={submit}>
+            {createUser.isPending ? "Création…" : "Créer l'utilisateur"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

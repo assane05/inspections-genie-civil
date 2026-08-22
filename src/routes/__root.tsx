@@ -98,8 +98,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "author", content: "LAS" },
       { name: "theme-color", content: "#1d4ed8" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "LAS Inspections" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-title", content: "LAS Inspections" },
       { property: "og:title", content: "LAS Inspections — Infrastructures Horizontales" },
       {
         property: "og:description",

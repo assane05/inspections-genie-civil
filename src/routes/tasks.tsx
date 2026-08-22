@@ -67,14 +67,6 @@ function TasksPage() {
     });
   };
 
-  // const deleteTask = useDeleteTask();
-  // const handleDelete = (id: string) => {
-  //   deleteTask.mutate(id, {
-  //     onSuccess: () => toast.success("Tâche supprimée"),
-  //     onError: () => toast.error("Suppression impossible", { description: "Réessayez." }),
-  //   });
-  // };
-
   return (
     <div className="pb-10">
       <PageHeader
@@ -87,7 +79,7 @@ function TasksPage() {
             size="sm"
             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <Link to="/tasks/new">
+            <Link to="/tasks_new">
               <Plus className="h-4 w-4" />
               {t("action.new_task")}
             </Link>

@@ -22,7 +22,7 @@ import { useAssignments, useCreateAssignments, useFormTypesList } from "@/lib/qu
 import { isoWeek } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/tasks/new")({
+export const Route = createFileRoute("/tasks_new")({
   component: NewTask,
   head: () => ({
     meta: [
