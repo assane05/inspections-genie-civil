@@ -54,6 +54,7 @@ const API_URL = import.meta.env.VITE_AUTH_API_URL as string | undefined;
 
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 export const IDLE_TIMEOUT_SECONDS = 15 * 60;
+// export const IDLE_TIMEOUT_SECONDS = 60 * 60; pour 1h
 
 export const SUPERVISOR_GROUPS = [
   "Supervisor 1",
