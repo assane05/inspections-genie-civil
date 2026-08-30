@@ -7,7 +7,13 @@ import { enqueueSubmission } from "@/lib/offline-queue";
 export type FindingState = "non_inspecte" | "ras" | "minor" | "major" | "yes" | "na";
 export type SeverityLevel = "leger" | "moyen" | "eleve";
 
-export type FormSchemaItem = { id: string; label: string; sortOrder: number };
+export type FormSchemaItem = {
+  id: string;
+  label: string;
+  sortOrder: number;
+  excludedSegmentIds: string[];
+};
+
 export type FormSchemaSection = {
   id: string;
   code: string | null;
@@ -51,6 +57,9 @@ export type InspectionValue = {
   state: FindingState;
   severity: SeverityLevel | null;
   revealQualitative: string | null;
+  measurementSurfaceM2: number | null;
+  measurementLengthM: number | null;
+  measurementHeightOrDepthM: number | null;
   locationAction: string | null;
   comment: string | null;
   photos: InspectionPhoto[];
@@ -127,6 +136,9 @@ export type ValueUpsertInput = {
   state: FindingState;
   severity?: SeverityLevel | null;
   revealQualitative?: string | null;
+  measurementSurfaceM2?: number | null;
+  measurementLengthM?: number | null;
+  measurementHeightOrDepthM?: number | null;
   locationAction?: string | null;
   comment?: string | null;
 };

@@ -50,14 +50,24 @@ export type InspectionValueControlProps = {
   itemLabel: string;
   segmentLabel?: string;
   value: InspectionValue | undefined;
+  /** Persiste le changement (PATCH /inspections/:id/values) — un seul constat à la fois. */
   onChange: (patch: {
     state: FindingState;
     severity?: SeverityLevel | null;
+    measurementSurfaceM2?: number | null;
+    measurementLengthM?: number | null;
+    measurementHeightOrDepthM?: number | null;
     comment?: string | null;
   }) => void;
   disabled?: boolean;
 };
 
+/**
+ * Une cellule = un constat (item × segment, ou item seul en bâtiment).
+ * Un défaut (minor/major) sans sévérité est bloqué à la soumission côté
+ * serveur [D-submit] : on affiche donc immédiatement le sélecteur de
+ * sévérité dès qu'un état de défaut est choisi, pour éviter l'aller-retour.
+ */
 export function InspectionValueControl({
   inspectionId,
   itemLabel,
@@ -71,6 +81,11 @@ export function InspectionValueControl({
     value?.severity ?? null,
   );
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [surfaceM2, setSurfaceM2] = useState(value?.measurementSurfaceM2?.toString() ?? "");
+  const [lengthM, setLengthM] = useState(value?.measurementLengthM?.toString() ?? "");
+  const [heightOrDepthM, setHeightOrDepthM] = useState(
+    value?.measurementHeightOrDepthM?.toString() ?? "",
+  );
 
   const addPhoto = useAddValuePhoto(inspectionId);
   const deletePhoto = useDeleteValuePhoto(inspectionId);
@@ -209,6 +224,69 @@ export function InspectionValueControl({
               />
             </label>
           )}
+        </div>
+      )}
+
+      {isDefect(state) && value?.id && (
+        <div className="flex items-center gap-2 pl-0.5 text-xs">
+          <span className="text-muted-foreground">Mesures :</span>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground">S</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={surfaceM2}
+              disabled={disabled}
+              onChange={(e) => setSurfaceM2(e.target.value)}
+              onBlur={() => {
+                const parsed = surfaceM2.trim() ? Number(surfaceM2) : null;
+                if (parsed !== (value.measurementSurfaceM2 ?? null)) {
+                  onChange({ state, measurementSurfaceM2: parsed });
+                }
+              }}
+              placeholder="m²"
+              className="h-7 w-16 text-xs"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground">long</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={lengthM}
+              disabled={disabled}
+              onChange={(e) => setLengthM(e.target.value)}
+              onBlur={() => {
+                const parsed = lengthM.trim() ? Number(lengthM) : null;
+                if (parsed !== (value.measurementLengthM ?? null)) {
+                  onChange({ state, measurementLengthM: parsed });
+                }
+              }}
+              placeholder="m"
+              className="h-7 w-16 text-xs"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground">h ou p</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={heightOrDepthM}
+              disabled={disabled}
+              onChange={(e) => setHeightOrDepthM(e.target.value)}
+              onBlur={() => {
+                const parsed = heightOrDepthM.trim() ? Number(heightOrDepthM) : null;
+                if (parsed !== (value.measurementHeightOrDepthM ?? null)) {
+                  onChange({ state, measurementHeightOrDepthM: parsed });
+                }
+              }}
+              placeholder="m"
+              className="h-7 w-16 text-xs"
+            />
+          </div>
         </div>
       )}
 
