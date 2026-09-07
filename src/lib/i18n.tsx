@@ -16,7 +16,7 @@ const dict: Dict = {
   "nav.planning": { fr: "Planning", en: "Planning" },
   "nav.evaluation": { fr: "Formulaire d'évaluation", en: "Evaluation form" },
   "nav.gallery": { fr: "Galerie photos", en: "Photo gallery" },
-  "nav.analytics": { fr: "Analytique / Archives", en: "Analytics / Archives" },
+  "nav.analytics": { fr: "Analytique", en: "Analytics" },
   "nav.inspections": { fr: "Inspections", en: "Inspections" },
   "nav.settings": { fr: "Paramètres", en: "Settings" },
   "nav.models": { fr: "Modèles de formulaires", en: "Form templates" },

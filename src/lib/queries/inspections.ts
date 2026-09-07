@@ -87,6 +87,8 @@ export type Inspection = {
 export type InspectionWithValues = Inspection & {
   values: InspectionValue[];
   submittedBy: { displayName: string } | null;
+  verifiedBy: { displayName: string } | null;
+  rejectionReason: string | null;
 };
 
 export const inspectionKeys = {
@@ -303,6 +305,76 @@ export function useDeleteCorrectiveAction(inspectionId: string) {
       api.delete(`/api/inspections/${inspectionId}/values/${valueId}/corrective-action`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inspectionKeys.detail(inspectionId) });
+    },
+  });
+}
+
+// ========= À AJOUTER dans front/src/lib/queries/inspections.ts =========
+
+export type SubmittedInspection = {
+  id: string;
+  status: "soumis" | "verifie" | "rejete";
+  submittedAt: string | null;
+  rejectionReason: string | null;
+  formType: { id: string; code: string; name: string; module: "horizontal" | "vertical" };
+  group: { id: string; name: string };
+  assignment: { zoneNotes: string | null; year: number; bimonthlyPeriod: number } | null;
+  submittedBy: { id: string; displayName: string } | null;
+  verifiedBy: { id: string; displayName: string } | null;
+  weekNumber: number | null;
+};
+
+export type SubmittedInspectionFilters = {
+  q?: string;
+  year?: string;
+  bimester?: string;
+  week?: string;
+  formTypeId?: string;
+  status?: "all" | "soumis" | "verifie" | "rejete";
+};
+
+/**
+ * Liste des fiches soumises. Admin/approbateur : tous groupes. Superviseur :
+ * uniquement ses propres fiches soumises ("mes fiches").
+ */
+export function useSubmittedInspections(filters: SubmittedInspectionFilters) {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.year && filters.year !== "all") params.set("year", filters.year);
+  if (filters.bimester && filters.bimester !== "all") params.set("bimester", filters.bimester);
+  if (filters.week && filters.week !== "all") params.set("week", filters.week);
+  if (filters.formTypeId && filters.formTypeId !== "all")
+    params.set("formTypeId", filters.formTypeId);
+  if (filters.status && filters.status !== "all") params.set("status", filters.status);
+  const qs = params.toString();
+
+  return useQuery({
+    queryKey: ["inspections", "submitted", filters] as const,
+    queryFn: () =>
+      api.get<{ inspections: SubmittedInspection[] }>(`/api/inspections${qs ? `?${qs}` : ""}`),
+    select: (d) => d.inspections,
+  });
+}
+
+export function useVerifyInspection(inspectionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<Inspection>(`/api/inspections/${inspectionId}/verify`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: inspectionKeys.detail(inspectionId) });
+      queryClient.invalidateQueries({ queryKey: ["inspections", "submitted"] });
+    },
+  });
+}
+
+export function useRejectInspection(inspectionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) =>
+      api.post<Inspection>(`/api/inspections/${inspectionId}/reject`, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: inspectionKeys.detail(inspectionId) });
+      queryClient.invalidateQueries({ queryKey: ["inspections", "submitted"] });
     },
   });
 }

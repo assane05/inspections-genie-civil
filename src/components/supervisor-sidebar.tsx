@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, FileText, ImageIcon, LayoutDashboard, Plane, LogOut } from "lucide-react";
+import {
+  ClipboardList,
+  FileText,
+  ImageIcon,
+  LayoutDashboard,
+  Plane,
+  LogOut,
+  FileCheck,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +45,7 @@ export function SupervisorSidebar() {
     { title: t("nav.tasks"), url: "/supervisor/tasks", icon: ClipboardList },
     { title: t("nav.available_forms"), url: "/supervisor/forms", icon: FileText },
     { title: t("nav.gallery"), url: "/supervisor/gallery", icon: ImageIcon },
+    { title: "Mes fiches", url: "/supervisor/my-forms", icon: FileCheck },
   ];
 
   const isActive = (url: string) => pathname === url || pathname.startsWith(url + "/");

@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EvaluationRouteImport } from './routes/evaluation'
 import { Route as FormsRouteImport } from './routes/forms'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as InspectionsRouteImport } from './routes/inspections'
 import { Route as ModelsRouteImport } from './routes/models'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as SupervisorRouteImport } from './routes/supervisor'
@@ -22,10 +23,12 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as Tasks_newRouteImport } from './routes/tasks_new'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as FormsAvailableRouteImport } from './routes/forms.available'
+import { Route as InspectionsIdRouteImport } from './routes/inspections.$id'
 import { Route as SupervisorIndexRouteImport } from './routes/supervisor.index'
 import { Route as SupervisorDashboardRouteImport } from './routes/supervisor.dashboard'
 import { Route as SupervisorFormsRouteImport } from './routes/supervisor.forms'
 import { Route as SupervisorGalleryRouteImport } from './routes/supervisor.gallery'
+import { Route as SupervisorMyFormsRouteImport } from './routes/supervisor.my-forms'
 import { Route as SupervisorTasksRouteImport } from './routes/supervisor.tasks'
 import { Route as SupervisorBuildingTaskIdRouteImport } from './routes/supervisor.building.$taskId'
 import { Route as SupervisorTaskTaskIdRouteImport } from './routes/supervisor.task.$taskId'
@@ -58,6 +61,11 @@ const FormsRoute = FormsRouteImport.update({
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspectionsRoute = InspectionsRouteImport.update({
+  id: '/inspections',
+  path: '/inspections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModelsRoute = ModelsRouteImport.update({
@@ -95,6 +103,11 @@ const FormsAvailableRoute = FormsAvailableRouteImport.update({
   path: '/available',
   getParentRoute: () => FormsRoute,
 } as any)
+const InspectionsIdRoute = InspectionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => InspectionsRoute,
+} as any)
 const SupervisorIndexRoute = SupervisorIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -113,6 +126,11 @@ const SupervisorFormsRoute = SupervisorFormsRouteImport.update({
 const SupervisorGalleryRoute = SupervisorGalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => SupervisorRoute,
+} as any)
+const SupervisorMyFormsRoute = SupervisorMyFormsRouteImport.update({
+  id: '/my-forms',
+  path: '/my-forms',
   getParentRoute: () => SupervisorRoute,
 } as any)
 const SupervisorTasksRoute = SupervisorTasksRouteImport.update({
@@ -139,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/inspections': typeof InspectionsRouteWithChildren
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
@@ -146,9 +165,11 @@ export interface FileRoutesByFullPath {
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
+  '/inspections/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
+  '/supervisor/my-forms': typeof SupervisorMyFormsRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
   '/supervisor/': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
@@ -161,15 +182,18 @@ export interface FileRoutesByTo {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/inspections': typeof InspectionsRouteWithChildren
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/tasks': typeof TasksRoute
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
+  '/inspections/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
+  '/supervisor/my-forms': typeof SupervisorMyFormsRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
   '/supervisor': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
@@ -183,6 +207,7 @@ export interface FileRoutesById {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/inspections': typeof InspectionsRouteWithChildren
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
@@ -190,9 +215,11 @@ export interface FileRoutesById {
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
+  '/inspections/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
+  '/supervisor/my-forms': typeof SupervisorMyFormsRoute
   '/supervisor/tasks': typeof SupervisorTasksRoute
   '/supervisor/': typeof SupervisorIndexRoute
   '/supervisor/building/$taskId': typeof SupervisorBuildingTaskIdRoute
@@ -207,6 +234,7 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/inspections'
     | '/models'
     | '/planning'
     | '/supervisor'
@@ -214,9 +242,11 @@ export interface FileRouteTypes {
     | '/tasks_new'
     | '/users'
     | '/forms/available'
+    | '/inspections/$id'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
+    | '/supervisor/my-forms'
     | '/supervisor/tasks'
     | '/supervisor/'
     | '/supervisor/building/$taskId'
@@ -229,15 +259,18 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/inspections'
     | '/models'
     | '/planning'
     | '/tasks'
     | '/tasks_new'
     | '/users'
     | '/forms/available'
+    | '/inspections/$id'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
+    | '/supervisor/my-forms'
     | '/supervisor/tasks'
     | '/supervisor'
     | '/supervisor/building/$taskId'
@@ -250,6 +283,7 @@ export interface FileRouteTypes {
     | '/evaluation'
     | '/forms'
     | '/gallery'
+    | '/inspections'
     | '/models'
     | '/planning'
     | '/supervisor'
@@ -257,9 +291,11 @@ export interface FileRouteTypes {
     | '/tasks_new'
     | '/users'
     | '/forms/available'
+    | '/inspections/$id'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
+    | '/supervisor/my-forms'
     | '/supervisor/tasks'
     | '/supervisor/'
     | '/supervisor/building/$taskId'
@@ -273,6 +309,7 @@ export interface RootRouteChildren {
   EvaluationRoute: typeof EvaluationRoute
   FormsRoute: typeof FormsRouteWithChildren
   GalleryRoute: typeof GalleryRoute
+  InspectionsRoute: typeof InspectionsRouteWithChildren
   ModelsRoute: typeof ModelsRoute
   PlanningRoute: typeof PlanningRoute
   SupervisorRoute: typeof SupervisorRouteWithChildren
@@ -325,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inspections': {
+      id: '/inspections'
+      path: '/inspections'
+      fullPath: '/inspections'
+      preLoaderRoute: typeof InspectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/models': {
       id: '/models'
       path: '/models'
@@ -374,6 +418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FormsAvailableRouteImport
       parentRoute: typeof FormsRoute
     }
+    '/inspections/$id': {
+      id: '/inspections/$id'
+      path: '/$id'
+      fullPath: '/inspections/$id'
+      preLoaderRoute: typeof InspectionsIdRouteImport
+      parentRoute: typeof InspectionsRoute
+    }
     '/supervisor/': {
       id: '/supervisor/'
       path: '/'
@@ -400,6 +451,13 @@ declare module '@tanstack/react-router' {
       path: '/gallery'
       fullPath: '/supervisor/gallery'
       preLoaderRoute: typeof SupervisorGalleryRouteImport
+      parentRoute: typeof SupervisorRoute
+    }
+    '/supervisor/my-forms': {
+      id: '/supervisor/my-forms'
+      path: '/my-forms'
+      fullPath: '/supervisor/my-forms'
+      preLoaderRoute: typeof SupervisorMyFormsRouteImport
       parentRoute: typeof SupervisorRoute
     }
     '/supervisor/tasks': {
@@ -436,10 +494,23 @@ const FormsRouteChildren: FormsRouteChildren = {
 
 const FormsRouteWithChildren = FormsRoute._addFileChildren(FormsRouteChildren)
 
+interface InspectionsRouteChildren {
+  InspectionsIdRoute: typeof InspectionsIdRoute
+}
+
+const InspectionsRouteChildren: InspectionsRouteChildren = {
+  InspectionsIdRoute: InspectionsIdRoute,
+}
+
+const InspectionsRouteWithChildren = InspectionsRoute._addFileChildren(
+  InspectionsRouteChildren,
+)
+
 interface SupervisorRouteChildren {
   SupervisorDashboardRoute: typeof SupervisorDashboardRoute
   SupervisorFormsRoute: typeof SupervisorFormsRoute
   SupervisorGalleryRoute: typeof SupervisorGalleryRoute
+  SupervisorMyFormsRoute: typeof SupervisorMyFormsRoute
   SupervisorTasksRoute: typeof SupervisorTasksRoute
   SupervisorIndexRoute: typeof SupervisorIndexRoute
   SupervisorBuildingTaskIdRoute: typeof SupervisorBuildingTaskIdRoute
@@ -450,6 +521,7 @@ const SupervisorRouteChildren: SupervisorRouteChildren = {
   SupervisorDashboardRoute: SupervisorDashboardRoute,
   SupervisorFormsRoute: SupervisorFormsRoute,
   SupervisorGalleryRoute: SupervisorGalleryRoute,
+  SupervisorMyFormsRoute: SupervisorMyFormsRoute,
   SupervisorTasksRoute: SupervisorTasksRoute,
   SupervisorIndexRoute: SupervisorIndexRoute,
   SupervisorBuildingTaskIdRoute: SupervisorBuildingTaskIdRoute,
@@ -467,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   EvaluationRoute: EvaluationRoute,
   FormsRoute: FormsRouteWithChildren,
   GalleryRoute: GalleryRoute,
+  InspectionsRoute: InspectionsRouteWithChildren,
   ModelsRoute: ModelsRoute,
   PlanningRoute: PlanningRoute,
   SupervisorRoute: SupervisorRouteWithChildren,

@@ -4,6 +4,7 @@ import { type TaskRow, isoWeek } from "@/lib/mock-data";
 
 type ApiFormType = { id: string; code: string; name: string; module: "horizontal" | "vertical" };
 type ApiGroup = { id: string; name: string };
+type ApiAssignedTo = { id: string; displayName: string } | null;
 type ApiInspectionSummary = {
   id: string;
   status: "non_soumis" | "soumis" | "verifie" | "rejete";
@@ -13,6 +14,7 @@ type ApiAssignment = {
   id: string;
   formType: ApiFormType;
   group: ApiGroup;
+  assignedTo: ApiAssignedTo;
   zoneNotes: string | null;
   year: number;
   bimonthlyPeriod: number;
@@ -29,11 +31,6 @@ function frLabel(iso: string): string {
   });
 }
 
-/**
- * Traduit le statut d'inspection (schéma v1.1) vers le vocabulaire d'écran
- * existant (TaskRow.status). "rejete" n'a pas d'équivalent direct — traité
- * comme "non_submitted" (à refaire) en attendant un statut dédié côté UI.
- */
 function toTaskStatus(inspection: ApiInspectionSummary | null): TaskRow["status"] {
   if (!inspection) return "not_submitted";
   if (inspection.status === "verifie") return "verified";
@@ -42,8 +39,7 @@ function toTaskStatus(inspection: ApiInspectionSummary | null): TaskRow["status"
   return inspection.hasValues ? "in_progress" : "not_submitted";
 }
 
-/** L'écran de fiche résout désormais l'inspection depuis l'assignmentId (création idempotente) — id = assignment.id. */
-function toTaskRow(a: ApiAssignment): TaskRow {
+function toTaskRow(a: ApiAssignment): TaskRow & { assignedTo: ApiAssignedTo } {
   const dueISO = a.dueDate ? a.dueDate.slice(0, 10) : new Date().toISOString().slice(0, 10);
   return {
     id: a.id,
@@ -58,6 +54,7 @@ function toTaskRow(a: ApiAssignment): TaskRow {
     week: a.weekNumber ?? isoWeek(dueISO),
     status: toTaskStatus(a.inspection),
     kind: a.formType.module === "vertical" ? "batiment" : "horizontal",
+    assignedTo: a.assignedTo,
   };
 }
 
@@ -66,7 +63,6 @@ export const assignmentKeys = {
   list: () => [...assignmentKeys.all, "list"] as const,
 };
 
-/** Le filtrage par groupe est appliqué côté serveur (superviseur = ses groupes, admin/approbateur = tout). */
 export function useAssignments() {
   return useQuery({
     queryKey: assignmentKeys.list(),
@@ -74,8 +70,6 @@ export function useAssignments() {
     select: (data) => data.assignments.map(toTaskRow),
   });
 }
-
-// ========= GET /api/form-types (liste, pour le sélecteur de création) =========
 
 export type FormTypeSummary = {
   id: string;
@@ -93,12 +87,14 @@ export function useFormTypesList() {
   });
 }
 
-// ========= POST /api/assignments (création en lot zones × groupes) =========
-
+/**
+ * Création nominative : une fiche par zone, toutes affectées au MÊME
+ * superviseur choisi par l'admin (pas un groupe entier).
+ */
 export type CreateAssignmentsInput = {
   formTypeId: string;
   zones: string[];
-  groupIds: string[];
+  assignedToId: string;
   dueISO: string;
   notes?: string;
 };
@@ -111,7 +107,7 @@ export function useCreateAssignments() {
         .post<{ assignments: ApiAssignment[] }>("/api/assignments", {
           formTypeId: input.formTypeId,
           zones: input.zones,
-          groupIds: input.groupIds,
+          assignedToId: input.assignedToId,
           dueDate: input.dueISO,
           notes: input.notes,
         })
@@ -119,8 +115,6 @@ export function useCreateAssignments() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: assignmentKeys.all }),
   });
 }
-
-// ========= DELETE /api/assignments/:id =========
 
 export function useDeleteAssignment() {
   const queryClient = useQueryClient();

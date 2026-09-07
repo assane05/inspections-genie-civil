@@ -12,6 +12,7 @@ import {
   BookOpen,
   Layers,
   Users,
+  CheckSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,6 +60,7 @@ export function AppSidebar() {
   const admin = [
     { title: t("nav.models"), url: "/models", icon: Layers },
     { title: t("nav.users"), url: "/users", icon: Users },
+    { title: "Fiches soumises", url: "/inspections", icon: CheckSquare },
   ];
 
   const isActive = (url: string) =>
