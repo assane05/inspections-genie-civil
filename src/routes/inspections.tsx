@@ -194,10 +194,21 @@ function InspectionsPage() {
                 return (
                   <TableRow key={insp.id} className="border-border/40">
                     <TableCell className="pl-5 font-medium">
-                      <Link
+                      {/* <Link
                         to="/inspections/$id"
                         params={{ id: insp.id }}
                         className="hover:underline"
+                      >
+                        {insp.formType.name}
+                      </Link> */}
+                      <Link
+                        to="/inspections/$id"
+                        params={{ id: insp.id }}
+                        className="hover:underline text-red-500"
+                        onClick={() => {
+                          console.log("CLIC SUR FICHE");
+                          console.log("ID =", insp.id);
+                        }}
                       >
                         {insp.formType.name}
                       </Link>
