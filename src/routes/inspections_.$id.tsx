@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { InspectionReadOnlyView } from "@/components/inspection/inspection-read-only-view";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/inspections/$id")({
+export const Route = createFileRoute("/inspections_/$id")({
   component: InspectionDetail,
   head: () => ({
     meta: [{ title: "Détail de la fiche — LAS Inspections" }],
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/inspections/$id")({
 });
 
 function InspectionDetail() {
-  const { id } = useParams({ from: "/inspections/$id" });
+  const { id } = Route.useParams();
   const { user } = useAuth();
   const canValidate = user?.role === "admin";
 

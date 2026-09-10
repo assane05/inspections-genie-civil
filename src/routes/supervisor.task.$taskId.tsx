@@ -43,7 +43,7 @@ function TaskForm() {
           </Button>
         }
       />
-      <div className="mx-auto max-w-3xl space-y-4 px-6 py-6 md:px-8">
+      <div className="mx-auto max-w-5xl space-y-4 px-6 py-6 md:px-8">
         <InspectionForm
           assignmentId={assignmentId}
           onSubmitted={() => navigate({ to: "/supervisor/tasks" })}

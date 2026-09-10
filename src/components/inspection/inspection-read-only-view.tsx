@@ -174,7 +174,7 @@ export function InspectionReadOnlyView({
    */
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* EN-TÊTE */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/40 p-4">
         <div>
@@ -236,7 +236,7 @@ export function InspectionReadOnlyView({
       {/* SECTIONS */}
       {schema.sections.map((section) => (
         <div key={section.id} className="rounded-xl border border-border/60 bg-card/40 p-4">
-          <h3 className="mb-3 text-sm font-semibold">
+          <h3 className="mb-3 text-md font-semibold">
             {section.code ? `${section.code} — ${section.label}` : section.label}
           </h3>
 
@@ -250,7 +250,7 @@ export function InspectionReadOnlyView({
 
               return (
                 <div key={item.id}>
-                  <p className="mb-1 text-sm font-medium">{item.label}</p>
+                  <p className="mb-1 text-md font-medium">{item.label}</p>
 
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {cells.map((seg) => {

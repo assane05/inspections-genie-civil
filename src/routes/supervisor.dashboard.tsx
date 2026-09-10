@@ -42,8 +42,6 @@ function SupervisorDashboard() {
   const set = (key: keyof TaskFilters, value: string) =>
     setFilters((f) => ({ ...f, [key]: value }));
 
-  // Même source et même fonction de filtrage que la liste des tâches (sprint 11) et le
-  // compteur "X of Y" par formulaire (sprint 13) — garantit des chiffres cohérents partout.
   const { data: scoped = [] } = useAssignments();
   const filtered = useMemo(() => applyFilters(scoped, filters), [scoped, filters]);
 

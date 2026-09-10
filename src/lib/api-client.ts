@@ -13,6 +13,43 @@ export class ApiError extends Error {
   }
 }
 
+export interface DashboardStats {
+  kpis: {
+    totalForms: number;
+    verifiedForms: number;
+    verifiedPct: number;
+    totalTasks: number;
+    submittedTasks: number;
+    submittedPct: number;
+  };
+
+  assignmentsDist: {
+    name: string;
+    value: number;
+  }[];
+
+  trend: {
+    week: string;
+    submitted: number;
+    verified: number;
+  }[];
+
+  byGroup: {
+    group: string;
+    count: number;
+  }[];
+
+  recent: {
+    id: string;
+    name: string;
+    formType: string;
+    group: string;
+    lastSubmission: string | null;
+    week: number | null;
+    status: "non_soumis" | "soumis" | "verifie" | "rejete";
+  }[];
+}
+
 function baseUrl(): string {
   if (!API_URL) {
     throw new Error(
@@ -59,4 +96,5 @@ export const api = {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
   delete: <T = unknown>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  dashboardStats: () => apiFetch<DashboardStats>("/api/dashboard/stats"),
 };

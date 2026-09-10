@@ -23,7 +23,7 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as Tasks_newRouteImport } from './routes/tasks_new'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as FormsAvailableRouteImport } from './routes/forms.available'
-import { Route as InspectionsIdRouteImport } from './routes/inspections.$id'
+import { Route as InspectionsIdRouteImport } from './routes/inspections_.$id'
 import { Route as SupervisorIndexRouteImport } from './routes/supervisor.index'
 import { Route as SupervisorDashboardRouteImport } from './routes/supervisor.dashboard'
 import { Route as SupervisorFormsRouteImport } from './routes/supervisor.forms'
@@ -104,9 +104,9 @@ const FormsAvailableRoute = FormsAvailableRouteImport.update({
   getParentRoute: () => FormsRoute,
 } as any)
 const InspectionsIdRoute = InspectionsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => InspectionsRoute,
+  id: '/inspections_/$id',
+  path: '/inspections/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SupervisorIndexRoute = SupervisorIndexRouteImport.update({
   id: '/',
@@ -157,7 +157,7 @@ export interface FileRoutesByFullPath {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/inspections': typeof InspectionsRouteWithChildren
+  '/inspections': typeof InspectionsRoute
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
@@ -182,7 +182,7 @@ export interface FileRoutesByTo {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/inspections': typeof InspectionsRouteWithChildren
+  '/inspections': typeof InspectionsRoute
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/tasks': typeof TasksRoute
@@ -207,7 +207,7 @@ export interface FileRoutesById {
   '/evaluation': typeof EvaluationRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/inspections': typeof InspectionsRouteWithChildren
+  '/inspections': typeof InspectionsRoute
   '/models': typeof ModelsRoute
   '/planning': typeof PlanningRoute
   '/supervisor': typeof SupervisorRouteWithChildren
@@ -215,7 +215,7 @@ export interface FileRoutesById {
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
   '/forms/available': typeof FormsAvailableRoute
-  '/inspections/$id': typeof InspectionsIdRoute
+  '/inspections_/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
   '/supervisor/forms': typeof SupervisorFormsRoute
   '/supervisor/gallery': typeof SupervisorGalleryRoute
@@ -291,7 +291,7 @@ export interface FileRouteTypes {
     | '/tasks_new'
     | '/users'
     | '/forms/available'
-    | '/inspections/$id'
+    | '/inspections_/$id'
     | '/supervisor/dashboard'
     | '/supervisor/forms'
     | '/supervisor/gallery'
@@ -309,13 +309,14 @@ export interface RootRouteChildren {
   EvaluationRoute: typeof EvaluationRoute
   FormsRoute: typeof FormsRouteWithChildren
   GalleryRoute: typeof GalleryRoute
-  InspectionsRoute: typeof InspectionsRouteWithChildren
+  InspectionsRoute: typeof InspectionsRoute
   ModelsRoute: typeof ModelsRoute
   PlanningRoute: typeof PlanningRoute
   SupervisorRoute: typeof SupervisorRouteWithChildren
   TasksRoute: typeof TasksRoute
   Tasks_newRoute: typeof Tasks_newRoute
   UsersRoute: typeof UsersRoute
+  InspectionsIdRoute: typeof InspectionsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -418,12 +419,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FormsAvailableRouteImport
       parentRoute: typeof FormsRoute
     }
-    '/inspections/$id': {
-      id: '/inspections/$id'
-      path: '/$id'
+    '/inspections_/$id': {
+      id: '/inspections_/$id'
+      path: '/inspections/$id'
       fullPath: '/inspections/$id'
       preLoaderRoute: typeof InspectionsIdRouteImport
-      parentRoute: typeof InspectionsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/supervisor/': {
       id: '/supervisor/'
@@ -494,18 +495,6 @@ const FormsRouteChildren: FormsRouteChildren = {
 
 const FormsRouteWithChildren = FormsRoute._addFileChildren(FormsRouteChildren)
 
-interface InspectionsRouteChildren {
-  InspectionsIdRoute: typeof InspectionsIdRoute
-}
-
-const InspectionsRouteChildren: InspectionsRouteChildren = {
-  InspectionsIdRoute: InspectionsIdRoute,
-}
-
-const InspectionsRouteWithChildren = InspectionsRoute._addFileChildren(
-  InspectionsRouteChildren,
-)
-
 interface SupervisorRouteChildren {
   SupervisorDashboardRoute: typeof SupervisorDashboardRoute
   SupervisorFormsRoute: typeof SupervisorFormsRoute
@@ -539,13 +528,14 @@ const rootRouteChildren: RootRouteChildren = {
   EvaluationRoute: EvaluationRoute,
   FormsRoute: FormsRouteWithChildren,
   GalleryRoute: GalleryRoute,
-  InspectionsRoute: InspectionsRouteWithChildren,
+  InspectionsRoute: InspectionsRoute,
   ModelsRoute: ModelsRoute,
   PlanningRoute: PlanningRoute,
   SupervisorRoute: SupervisorRouteWithChildren,
   TasksRoute: TasksRoute,
   Tasks_newRoute: Tasks_newRoute,
   UsersRoute: UsersRoute,
+  InspectionsIdRoute: InspectionsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
