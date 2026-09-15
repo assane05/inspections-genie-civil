@@ -1,8 +1,6 @@
 import { useState } from "react";
-
 import { Loader2, Check, X as XIcon, FileDown } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,14 +11,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-
 import {
   useInspection,
   useFormTypeSchema,
   useVerifyInspection,
   useRejectInspection,
 } from "@/lib/queries/inspections";
-
 import { exportInspectionPdf } from "@/lib/inspection-pdf";
 
 const STATE_LABELS: Record<string, string> = {

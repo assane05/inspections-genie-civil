@@ -15,6 +15,7 @@ const dict: Dict = {
   "nav.new_task": { fr: "Créer une tâche", en: "New task" },
   "nav.planning": { fr: "Planning", en: "Planning" },
   "nav.evaluation": { fr: "Formulaire d'évaluation", en: "Evaluation form" },
+  "nav.evaluations-list": { fr: "liste évaluation", en: "Evaluation list" },
   "nav.gallery": { fr: "Galerie photos", en: "Photo gallery" },
   "nav.analytics": { fr: "Analytique", en: "Analytics" },
   "nav.inspections": { fr: "Inspections", en: "Inspections" },

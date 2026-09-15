@@ -10,9 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EvaluationRouteImport } from './routes/evaluation'
+import { Route as EvaluationsListRouteImport } from './routes/evaluations-list'
 import { Route as FormsRouteImport } from './routes/forms'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as InspectionsRouteImport } from './routes/inspections'
@@ -22,6 +22,7 @@ import { Route as SupervisorRouteImport } from './routes/supervisor'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as Tasks_newRouteImport } from './routes/tasks_new'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as EvaluationsIdRouteImport } from './routes/evaluations_.$id'
 import { Route as FormsAvailableRouteImport } from './routes/forms.available'
 import { Route as InspectionsIdRouteImport } from './routes/inspections_.$id'
 import { Route as SupervisorIndexRouteImport } from './routes/supervisor.index'
@@ -38,11 +39,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -51,6 +47,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const EvaluationRoute = EvaluationRouteImport.update({
   id: '/evaluation',
   path: '/evaluation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationsListRoute = EvaluationsListRouteImport.update({
+  id: '/evaluations-list',
+  path: '/evaluations-list',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FormsRoute = FormsRouteImport.update({
@@ -96,6 +97,11 @@ const Tasks_newRoute = Tasks_newRouteImport.update({
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationsIdRoute = EvaluationsIdRouteImport.update({
+  id: '/evaluations_/$id',
+  path: '/evaluations/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FormsAvailableRoute = FormsAvailableRouteImport.update({
@@ -152,9 +158,9 @@ const SupervisorTaskTaskIdRoute = SupervisorTaskTaskIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/dashboard': typeof DashboardRoute
   '/evaluation': typeof EvaluationRoute
+  '/evaluations-list': typeof EvaluationsListRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/inspections': typeof InspectionsRoute
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof TasksRoute
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
+  '/evaluations/$id': typeof EvaluationsIdRoute
   '/forms/available': typeof FormsAvailableRoute
   '/inspections/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
@@ -177,9 +184,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/dashboard': typeof DashboardRoute
   '/evaluation': typeof EvaluationRoute
+  '/evaluations-list': typeof EvaluationsListRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/inspections': typeof InspectionsRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof TasksRoute
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
+  '/evaluations/$id': typeof EvaluationsIdRoute
   '/forms/available': typeof FormsAvailableRoute
   '/inspections/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
@@ -202,9 +210,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/dashboard': typeof DashboardRoute
   '/evaluation': typeof EvaluationRoute
+  '/evaluations-list': typeof EvaluationsListRoute
   '/forms': typeof FormsRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/inspections': typeof InspectionsRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/tasks': typeof TasksRoute
   '/tasks_new': typeof Tasks_newRoute
   '/users': typeof UsersRoute
+  '/evaluations_/$id': typeof EvaluationsIdRoute
   '/forms/available': typeof FormsAvailableRoute
   '/inspections_/$id': typeof InspectionsIdRoute
   '/supervisor/dashboard': typeof SupervisorDashboardRoute
@@ -229,9 +238,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/analytics'
     | '/dashboard'
     | '/evaluation'
+    | '/evaluations-list'
     | '/forms'
     | '/gallery'
     | '/inspections'
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/tasks_new'
     | '/users'
+    | '/evaluations/$id'
     | '/forms/available'
     | '/inspections/$id'
     | '/supervisor/dashboard'
@@ -254,9 +264,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analytics'
     | '/dashboard'
     | '/evaluation'
+    | '/evaluations-list'
     | '/forms'
     | '/gallery'
     | '/inspections'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/tasks_new'
     | '/users'
+    | '/evaluations/$id'
     | '/forms/available'
     | '/inspections/$id'
     | '/supervisor/dashboard'
@@ -278,9 +289,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/analytics'
     | '/dashboard'
     | '/evaluation'
+    | '/evaluations-list'
     | '/forms'
     | '/gallery'
     | '/inspections'
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/tasks_new'
     | '/users'
+    | '/evaluations_/$id'
     | '/forms/available'
     | '/inspections_/$id'
     | '/supervisor/dashboard'
@@ -304,9 +316,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
   DashboardRoute: typeof DashboardRoute
   EvaluationRoute: typeof EvaluationRoute
+  EvaluationsListRoute: typeof EvaluationsListRoute
   FormsRoute: typeof FormsRouteWithChildren
   GalleryRoute: typeof GalleryRoute
   InspectionsRoute: typeof InspectionsRoute
@@ -316,6 +328,7 @@ export interface RootRouteChildren {
   TasksRoute: typeof TasksRoute
   Tasks_newRoute: typeof Tasks_newRoute
   UsersRoute: typeof UsersRoute
+  EvaluationsIdRoute: typeof EvaluationsIdRoute
   InspectionsIdRoute: typeof InspectionsIdRoute
 }
 
@@ -326,13 +339,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -347,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/evaluation'
       fullPath: '/evaluation'
       preLoaderRoute: typeof EvaluationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluations-list': {
+      id: '/evaluations-list'
+      path: '/evaluations-list'
+      fullPath: '/evaluations-list'
+      preLoaderRoute: typeof EvaluationsListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forms': {
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluations_/$id': {
+      id: '/evaluations_/$id'
+      path: '/evaluations/$id'
+      fullPath: '/evaluations/$id'
+      preLoaderRoute: typeof EvaluationsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forms/available': {
@@ -523,9 +543,9 @@ const SupervisorRouteWithChildren = SupervisorRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalyticsRoute: AnalyticsRoute,
   DashboardRoute: DashboardRoute,
   EvaluationRoute: EvaluationRoute,
+  EvaluationsListRoute: EvaluationsListRoute,
   FormsRoute: FormsRouteWithChildren,
   GalleryRoute: GalleryRoute,
   InspectionsRoute: InspectionsRoute,
@@ -535,6 +555,7 @@ const rootRouteChildren: RootRouteChildren = {
   TasksRoute: TasksRoute,
   Tasks_newRoute: Tasks_newRoute,
   UsersRoute: UsersRoute,
+  EvaluationsIdRoute: EvaluationsIdRoute,
   InspectionsIdRoute: InspectionsIdRoute,
 }
 export const routeTree = rootRouteImport

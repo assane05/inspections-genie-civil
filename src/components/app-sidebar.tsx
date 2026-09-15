@@ -38,13 +38,13 @@ export function AppSidebar() {
 
   const primary = [
     { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
-    { title: t("nav.analytics"), url: "/analytics", icon: BookOpen },
+    // { title: t("nav.analytics"), url: "/analytics", icon: BookOpen },
   ];
 
-  const forms = [
-    { title: t("nav.available_forms"), url: "/forms/available", icon: ClipboardList },
-    { title: t("nav.submissions"), url: "/forms", icon: FileText },
-  ];
+  // const forms = [
+  //   { title: t("nav.available_forms"), url: "/forms/available", icon: ClipboardList },
+  //   { title: t("nav.submissions"), url: "/forms", icon: FileText },
+  // ];
 
   const ops = [
     { title: t("nav.tasks"), url: "/tasks", icon: ListChecks },
@@ -55,6 +55,7 @@ export function AppSidebar() {
   const misc = [
     { title: t("nav.gallery"), url: "/gallery", icon: ImageIcon },
     { title: t("nav.evaluation"), url: "/evaluation", icon: ClipboardCheck },
+    { title: t("nav.evaluations-list"), url: "/evaluations-list", icon: ClipboardCheck },
   ];
 
   const admin = [
@@ -129,7 +130,7 @@ export function AppSidebar() {
 
       <SidebarContent className="gap-1 px-2 py-3">
         <Section label={t("nav.dashboard")} items={primary} />
-        <Section label={t("nav.forms")} items={forms} />
+        {/* <Section label={t("nav.forms")} items={forms} /> */}
         <Section label={t("nav.tasks")} items={ops} />
         <Section label="Divers" items={misc} />
         <Section label="Administration" items={admin} />

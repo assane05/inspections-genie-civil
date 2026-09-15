@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Area,
   AreaChart,
@@ -15,13 +15,16 @@ import {
   YAxis,
 } from "recharts";
 import {
-  FileText,
-  ShieldCheck,
-  ListChecks,
-  Send,
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
   Download,
   FileDown,
-  ArrowRight,
+  FileText,
+  ListChecks,
+  Send,
+  ShieldCheck,
+  XCircle,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
@@ -39,30 +42,52 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { api } from "@/lib/api-client";
 
+export const Route = createFileRoute("/dashboard")({
+  component: Dashboard,
+});
+
+type InspectionStatus = "non_soumis" | "soumis" | "verifie" | "rejete";
+
 interface DashboardStats {
   kpis: {
     totalForms: number;
+    submittedForms: number;
     verifiedForms: number;
+    rejectedForms: number;
     verifiedPct: number;
+    compliancePct: number;
     totalTasks: number;
     submittedTasks: number;
+    overdueTasks: number;
     submittedPct: number;
   };
-
-  assignmentsDist: {
-    name: string;
-    value: number;
-  }[];
 
   trend: {
     week: string;
     submitted: number;
     verified: number;
+    rejected?: number;
   }[];
 
   byGroup: {
     group: string;
     count: number;
+  }[];
+
+  byStatus: {
+    name: string;
+    value: number;
+    status?: InspectionStatus;
+  }[];
+
+  compliance: {
+    name: string;
+    value: number;
+  }[];
+
+  assignmentsDist: {
+    name: string;
+    value: number;
   }[];
 
   recent: {
@@ -72,13 +97,9 @@ interface DashboardStats {
     group: string;
     lastSubmission: string | null;
     week: number | null;
-    status: "non_soumis" | "soumis" | "verifie" | "rejete";
+    status: InspectionStatus;
   }[];
 }
-
-export const Route = createFileRoute("/dashboard")({
-  component: Dashboard,
-});
 
 function Dashboard() {
   const { t } = useI18n();
@@ -88,18 +109,27 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [year, setYear] = useState("all");
+  const [bimester, setBimester] = useState("all");
+  const [group, setGroup] = useState("all");
+  const [formType, setFormType] = useState("all");
+
   useEffect(() => {
     const loadDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const data = await api.dashboardStats();
+        const data = await api.dashboardStats({
+          year,
+          bimester,
+          group,
+          formTypeId: formType,
+        });
 
         setDashboardData(data);
       } catch (err) {
         console.error("Erreur chargement dashboard :", err);
-
         setError("Impossible de charger les données du dashboard.");
       } finally {
         setLoading(false);
@@ -107,13 +137,47 @@ function Dashboard() {
     };
 
     loadDashboard();
-  }, []);
+  }, [year, bimester, group, formType]);
 
   const kpis = dashboardData?.kpis;
+
   const trend = dashboardData?.trend ?? [];
-  const assignmentsDist = dashboardData?.assignmentsDist ?? [];
   const byGroup = dashboardData?.byGroup ?? [];
+  const byStatus = dashboardData?.byStatus ?? [];
+  const compliance = dashboardData?.compliance ?? [];
+  const assignmentsDist = dashboardData?.assignmentsDist ?? [];
   const recent = dashboardData?.recent ?? [];
+
+  /**
+   * Les options disponibles pour les filtres.
+   *
+   * Elles sont construites à partir des données reçues du backend.
+   */
+  const groups = useMemo(() => {
+    return Array.from(new Set(byGroup.map((item) => item.group).filter(Boolean)));
+  }, [byGroup]);
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+
+    return [String(currentYear - 2), String(currentYear - 1), String(currentYear)];
+  }, []);
+
+  /**
+   * Pour le moment, les filtres sont préparés côté interface.
+   *
+   * Le filtrage réel sera idéalement fait côté backend afin d'avoir
+   * des statistiques exactes sur de gros volumes de données.
+   */
+  // const filteredRecent = useMemo(() => {
+  //   return recent.filter((item) => {
+  //     const matchesGroup = group === "all" || item.group === group;
+
+  //     const matchesForm = formType === "all" || item.formType === formType;
+
+  //     return matchesGroup && matchesForm;
+  //   });
+  // }, [recent, group, formType]);
 
   if (loading) {
     return (
@@ -126,7 +190,7 @@ function Dashboard() {
   if (error) {
     return (
       <div className="flex min-h-[400px] items-center justify-center p-6">
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="max-w-md rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       </div>
@@ -148,7 +212,7 @@ function Dashboard() {
 
             <Button
               size="sm"
-              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_20px_-4px_var(--color-primary)]"
+              className="gap-2 bg-primary text-primary-foreground shadow-[0_4px_20px_-4px_var(--color-primary)] hover:bg-primary/90"
             >
               <FileDown className="h-4 w-4" />
               {t("action.export_pdf")}
@@ -157,49 +221,202 @@ function Dashboard() {
         }
       />
 
-      <div className="space-y-6 p-6 md:p-8">
-        {/* KPIs */}
+      <div className="space-y-6 p-4 md:p-6 lg:p-8">
+        {/* =========================================================
+            FILTRES
+        ========================================================= */}
+
+        <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-sm">
+          <div className="mb-4">
+            <h3 className="font-display text-base font-semibold">Filtres du tableau de bord</h3>
+
+            <p className="text-xs text-muted-foreground">
+              Affinez la période et le périmètre des statistiques.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Année */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Année
+              </label>
+
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="all">Toutes les années</option>
+
+                {years.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bimestre */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Bimestre
+              </label>
+
+              <select
+                value={bimester}
+                onChange={(e) => setBimester(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="all">Tous les bimestres</option>
+                <option value="1">B1</option>
+                <option value="2">B2</option>
+                <option value="3">B3</option>
+                <option value="4">B4</option>
+                <option value="5">B5</option>
+                <option value="6">B6</option>
+              </select>
+            </div>
+
+            {/* Groupe */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Groupe
+              </label>
+
+              <select
+                value={group}
+                onChange={(e) => setGroup(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="all">Tous les groupes</option>
+
+                {dashboardData?.filterOptions.groups.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Formulaire */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Formulaire
+              </label>
+
+              <select
+                value={formType}
+                onChange={(e) => setFormType(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="all">Tous les formulaires</option>
+
+                {dashboardData?.filterOptions.formTypes.map((form) => (
+                  <option key={form.id} value={form.id}>
+                    {form.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            KPI
+        ========================================================= */}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
-            label={t("kpi.total_forms")}
+            label="Total fiches"
             value={kpis?.totalForms ?? 0}
             icon={FileText}
             accent="info"
           />
 
           <KpiCard
-            label={t("kpi.verified")}
+            label="Soumises"
+            value={kpis?.submittedForms ?? 0}
+            icon={Send}
+            accent="primary"
+          />
+
+          <KpiCard
+            label="Vérifiées"
             value={kpis?.verifiedForms ?? 0}
-            suffix={`/ ${kpis?.totalForms ?? 0} · ${kpis?.verifiedPct ?? 0}%`}
+            suffix={`${kpis?.verifiedPct ?? 0}%`}
             icon={ShieldCheck}
             accent="primary"
           />
 
           <KpiCard
-            label={t("kpi.total_tasks")}
-            value={kpis?.totalTasks ?? 0}
-            icon={ListChecks}
+            label="Rejetées"
+            value={kpis?.rejectedForms ?? 0}
+            icon={XCircle}
             accent="warning"
           />
 
-          <KpiCard
-            label={t("kpi.submitted_tasks")}
-            value={kpis?.submittedTasks ?? 0}
-            suffix={`/ ${kpis?.totalTasks ?? 0} · ${kpis?.submittedPct ?? 0}%`}
-            icon={Send}
+          {/* <KpiCard
+            label="Taux de conformité"
+            value={`${kpis?.compliancePct ?? 0}%`}
+            icon={CheckCircle2}
             accent="primary"
-          />
+          /> */}
+
+          {/* <KpiCard
+            label="Tâches"
+            value={kpis?.totalTasks ?? 0}
+            suffix={kpis?.overdueTasks ? `${kpis.overdueTasks} en retard` : "Aucune en retard"}
+            icon={ListChecks}
+            accent={kpis?.overdueTasks ? "warning" : "primary"}
+          /> */}
         </div>
 
-        {/* Charts */}
+        {/* =========================================================
+            ALERT TACHES
+        ========================================================= */}
+
+        {(kpis?.overdueTasks ?? 0) > 0 && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-full bg-warning/15 p-2">
+                <Clock3 className="h-4 w-4 text-warning" />
+              </div>
+
+              <div>
+                <p className="font-medium">Tâches en retard</p>
+
+                <p className="text-sm text-muted-foreground">
+                  {kpis?.overdueTasks} tâche
+                  {kpis?.overdueTasks !== 1 ? "s" : ""} nécessite
+                  {kpis?.overdueTasks !== 1 ? "nt" : ""} une attention.
+                </p>
+              </div>
+            </div>
+
+            <Link to="/tasks">
+              <Button variant="outline" size="sm" className="gap-2">
+                Voir les tâches
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* =========================================================
+            EVOLUTION + STATUT
+        ========================================================= */}
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Trend */}
+          {/* Evolution */}
           <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="font-display text-base font-semibold">{t("chart.trend")}</h3>
+                <h3 className="font-display text-base font-semibold">Évolution des inspections</h3>
 
-                <p className="text-xs text-muted-foreground">{t("common.this_month")}</p>
+                <p className="text-xs text-muted-foreground">
+                  Soumissions, vérifications et rejets
+                </p>
               </div>
 
               <Badge variant="outline" className="border-primary/30 text-primary">
@@ -219,13 +436,13 @@ function Dashboard() {
                   }}
                 >
                   <defs>
-                    <linearGradient id="gSub" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="gSubmitted" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.5} />
 
                       <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
                     </linearGradient>
 
-                    <linearGradient id="gVer" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="gVerified" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-chart-2)" stopOpacity={0.35} />
 
                       <stop offset="100%" stopColor="var(--color-chart-2)" stopOpacity={0} />
@@ -260,52 +477,68 @@ function Dashboard() {
                       borderRadius: 12,
                       fontSize: 12,
                     }}
-                    labelStyle={{
-                      color: "var(--color-muted-foreground)",
-                    }}
                   />
 
                   <Area
                     type="monotone"
                     dataKey="submitted"
+                    name="Soumises"
                     stroke="var(--color-primary)"
                     strokeWidth={2}
-                    fill="url(#gSub)"
+                    fill="url(#gSubmitted)"
                   />
 
                   <Area
                     type="monotone"
                     dataKey="verified"
+                    name="Vérifiées"
                     stroke="var(--color-chart-2)"
                     strokeWidth={2}
-                    fill="url(#gVer)"
+                    fill="url(#gVerified)"
+                  />
+
+                  <Area
+                    type="monotone"
+                    dataKey="rejected"
+                    name="Rejetées"
+                    stroke="var(--color-destructive)"
+                    strokeWidth={2}
+                    fill="none"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Assignments */}
+          {/* Statuts */}
           <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm">
-            <h3 className="font-display text-base font-semibold">{t("chart.assignments")}</h3>
+            <h3 className="font-display text-base font-semibold">Statut des inspections</h3>
 
-            <p className="text-xs text-muted-foreground">{t("common.this_month")}</p>
+            <p className="text-xs text-muted-foreground">Répartition globale</p>
 
             <div className="mt-4 h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={assignmentsDist}
+                    data={byStatus}
                     innerRadius={55}
-                    outerRadius={85}
+                    outerRadius={82}
                     paddingAngle={4}
                     dataKey="value"
                     stroke="none"
                   >
-                    {assignmentsDist.map((_, i) => (
+                    {byStatus.map((item, index) => (
                       <Cell
-                        key={i}
-                        fill={i === 0 ? "var(--color-primary)" : "var(--color-chart-4)"}
+                        key={`${item.name}-${index}`}
+                        fill={
+                          item.status === "verifie"
+                            ? "var(--color-success)"
+                            : item.status === "rejete"
+                              ? "var(--color-destructive)"
+                              : item.status === "soumis"
+                                ? "var(--color-primary)"
+                                : "var(--color-chart-4)"
+                        }
                       />
                     ))}
                   </Pie>
@@ -322,34 +555,28 @@ function Dashboard() {
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-2 space-y-2">
-              {assignmentsDist.map((d, i) => (
-                <div key={d.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{
-                        background: i === 0 ? "var(--color-primary)" : "var(--color-chart-4)",
-                      }}
-                    />
+            <div className="space-y-2">
+              {byStatus.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{item.name}</span>
 
-                    <span className="text-muted-foreground">{d.name}</span>
-                  </div>
-
-                  <span className="font-mono text-sm font-medium">{d.value}</span>
+                  <span className="font-mono font-medium">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* By group + Recent */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* By group */}
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm lg:col-span-1">
-            <h3 className="font-display text-base font-semibold">{t("chart.by_group")}</h3>
+        {/* =========================================================
+            GROUPE + CONFORMITE
+        ========================================================= */}
 
-            <p className="text-xs text-muted-foreground">Total inspections</p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Groupes */}
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm lg:col-span-2">
+            <h3 className="font-display text-base font-semibold">Inspections par groupe</h3>
+
+            <p className="text-xs text-muted-foreground">Nombre total d'inspections</p>
 
             <div className="mt-4 h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -382,7 +609,7 @@ function Dashboard() {
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    width={100}
+                    width={110}
                   />
 
                   <Tooltip
@@ -397,79 +624,198 @@ function Dashboard() {
                     }}
                   />
 
-                  <Bar dataKey="count" fill="var(--color-primary)" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="count"
+                    name="Inspections"
+                    fill="var(--color-primary)"
+                    radius={[0, 6, 6, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Recent */}
-          <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm lg:col-span-2">
-            <div className="flex items-center justify-between border-b border-border/60 p-5">
+          {/* Conformité */}
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm">
+            <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-display text-base font-semibold">{t("table.recent")}</h3>
+                <h3 className="font-display text-base font-semibold">Conformité</h3>
 
-                <p className="text-xs text-muted-foreground">
-                  {recent.length} soumission
-                  {recent.length > 1 ? "s" : ""} récente
-                  {recent.length > 1 ? "s" : ""}
-                </p>
+                <p className="text-xs text-muted-foreground">Résultats des inspections</p>
               </div>
 
-              <Button variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
-                {t("common.view_all")}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              <CheckCircle2 className="h-5 w-5 text-primary" />
             </div>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/60 hover:bg-transparent">
-                    <TableHead className="pl-5">{t("table.form")}</TableHead>
+            <div className="mt-8 flex justify-center">
+              <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full border-8 border-primary/15">
+                <span className="font-display text-3xl font-bold">{kpis?.compliancePct ?? 0}%</span>
 
-                    <TableHead>{t("table.week")}</TableHead>
+                <span className="text-xs text-muted-foreground">conforme</span>
+              </div>
+            </div>
 
-                    <TableHead>{t("table.assignments")}</TableHead>
+            <div className="mt-8 space-y-3">
+              {compliance.map((item) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{item.name}</span>
 
-                    <TableHead>{t("table.status")}</TableHead>
+                  <span className="font-mono text-sm font-medium">{item.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            DERNIERES INSPECTIONS
+        ========================================================= */}
+
+        <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm">
+          <div className="flex flex-col gap-3 border-b border-border/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-display text-base font-semibold">Dernières inspections</h3>
+
+              <p className="text-xs text-muted-foreground">
+                {recent.length} inspection
+                {recent.length > 1 ? "s" : ""} récente
+                {recent.length > 1 ? "s" : ""}
+              </p>
+            </div>
+
+            <Link to="/inspections">
+              <Button variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
+                Voir toutes les inspections
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/60 hover:bg-transparent">
+                  <TableHead className="pl-5">Formulaire</TableHead>
+
+                  <TableHead>Groupe</TableHead>
+
+                  <TableHead>Semaine</TableHead>
+
+                  <TableHead>Date</TableHead>
+
+                  <TableHead>Statut</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {recent.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                      Aucune inspection récente.
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
+                ) : (
+                  recent.slice(0, 8).map((item) => (
+                    <TableRow key={item.id} className="border-border/40">
+                      <TableCell className="pl-5 font-medium">
+                        <div>{item.name}</div>
 
-                <TableBody>
-                  {recent.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                        Aucune fiche récente.
+                        <div className="text-[11px] text-muted-foreground">{item.formType}</div>
+                      </TableCell>
+
+                      <TableCell className="font-mono text-sm">{item.group}</TableCell>
+
+                      <TableCell>
+                        <span className="font-mono text-sm">
+                          {item.week ? `S${item.week}` : "-"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        {item.lastSubmission
+                          ? new Date(item.lastSubmission).toLocaleDateString("fr-FR")
+                          : "-"}
+                      </TableCell>
+
+                      <TableCell>
+                        <StatusBadge status={item.status} />
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    recent.slice(0, 6).map((r) => (
-                      <TableRow key={r.id} className="border-border/40">
-                        <TableCell className="pl-5 font-medium">
-                          <div>{r.name}</div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
 
-                          <div className="text-[11px] text-muted-foreground">
-                            {r.lastSubmission
-                              ? new Date(r.lastSubmission).toLocaleDateString("fr-FR")
-                              : "-"}
-                          </div>
-                        </TableCell>
+        {/* =========================================================
+            RESUME TACHES
+        ========================================================= */}
 
-                        <TableCell>
-                          <span className="font-mono text-sm">{r.week ? `S${r.week}` : "-"}</span>
-                        </TableCell>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-primary/10 p-2.5">
+                <ListChecks className="h-5 w-5 text-primary" />
+              </div>
 
-                        <TableCell className="font-mono text-sm">{r.group}</TableCell>
+              <div>
+                <h3 className="font-display text-base font-semibold">Suivi des tâches</h3>
 
-                        <TableCell>
-                          <StatusBadge status={r.status} />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {kpis?.submittedTasks ?? 0} tâche
+                  {(kpis?.submittedTasks ?? 0) !== 1 ? "s" : ""} traitée
+                  {(kpis?.submittedTasks ?? 0) !== 1 ? "s" : ""} sur {kpis?.totalTasks ?? 0}.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{
+                  width: `${Math.min(100, kpis?.submittedPct ?? 0)}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>Progression</span>
+              <span>{kpis?.submittedPct ?? 0}%</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-success/10 p-2.5">
+                <ShieldCheck className="h-5 w-5 text-success" />
+              </div>
+
+              <div>
+                <h3 className="font-display text-base font-semibold">Vérification</h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {kpis?.verifiedForms ?? 0} fiche
+                  {(kpis?.verifiedForms ?? 0) !== 1 ? "s" : ""} vérifiée
+                  {(kpis?.verifiedForms ?? 0) !== 1 ? "s" : ""} sur {kpis?.submittedForms ?? 0}{" "}
+                  soumise
+                  {(kpis?.submittedForms ?? 0) !== 1 ? "s" : ""}.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-success transition-all"
+                style={{
+                  width: `${Math.min(100, kpis?.verifiedPct ?? 0)}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>Taux de vérification</span>
+              <span>{kpis?.verifiedPct ?? 0}%</span>
             </div>
           </div>
         </div>
@@ -478,9 +824,7 @@ function Dashboard() {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const { t } = useI18n();
-
+function StatusBadge({ status }: { status: InspectionStatus | string }) {
   const map: Record<
     string,
     {
@@ -488,42 +832,36 @@ function StatusBadge({ status }: { status: string }) {
       cls: string;
     }
   > = {
-    not_submitted: {
-      label: t("status.not_submitted"),
-      cls: "border-destructive/40 bg-destructive/10 text-destructive",
+    non_soumis: {
+      label: "Non soumise",
+      cls: "border-muted-foreground/30 bg-muted/30 text-muted-foreground",
     },
 
-    pending: {
-      label: t("status.pending"),
-      cls: "border-warning/40 bg-warning/10 text-warning",
+    soumis: {
+      label: "Soumise",
+      cls: "border-primary/30 bg-primary/10 text-primary",
     },
 
-    in_progress: {
-      label: "En cours",
-      cls: "border-warning/40 bg-warning/10 text-warning",
-    },
-
-    verified: {
-      label: t("status.verified"),
+    verifie: {
+      label: "Vérifiée",
       cls: "border-success/40 bg-success/10 text-success",
     },
 
-    rejected: {
+    rejete: {
       label: "Rejetée",
       cls: "border-destructive/40 bg-destructive/10 text-destructive",
     },
   };
 
   const normalizedStatus = String(status).trim().toLowerCase();
-  const s = map[normalizedStatus];
 
-  if (!s) {
-    console.warn("Statut inconnu :", status);
+  const item = map[normalizedStatus];
 
+  if (!item) {
     return (
       <Badge
         variant="outline"
-        className="border-border bg-muted/30 text-muted-foreground font-medium"
+        className="border-border bg-muted/30 font-medium text-muted-foreground"
       >
         <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
         Inconnu
@@ -532,9 +870,9 @@ function StatusBadge({ status }: { status: string }) {
   }
 
   return (
-    <Badge variant="outline" className={`${s.cls} font-medium`}>
+    <Badge variant="outline" className={`${item.cls} font-medium`}>
       <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
-      {s.label}
+      {item.label}
     </Badge>
   );
 }
